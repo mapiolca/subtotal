@@ -4,6 +4,21 @@ Module104777Name = SubTotal
 Module104777Desc = Allows to add titles and subtotals in proposal, orders and invoices
 Module104777DescLong = Adds titles, free text and subtotals to commercial documents, including situation invoices, PDF output and Multicompany boundaries.
 
+About=About
+SubtotalAbout=About SubTotal
+SubtotalAboutPage=Information, resources and support for the SubTotal module
+SubtotalAboutGeneral=General information
+SubtotalAboutVersion=Version
+SubtotalAboutFamily=Family
+SubtotalAboutDescription=Description
+SubtotalAboutMaintainer=Publisher
+SubtotalAboutResources=Resources
+SubtotalAboutDocumentation=Documentation
+SubtotalAboutDocumentationLink=Open the README
+SubtotalAboutSupport=Support
+SubtotalAboutSupportValue=Reach your integrator or the Dolistore support team for any request.
+SubtotalAboutContact=Publisher page
+
 Compatibility=Compatibility
 CompatibilityComponent=Component
 DetectedVersion=Detected version

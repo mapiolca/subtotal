@@ -2,6 +2,21 @@ Module104777Name = Sous-Total
 Module104777Desc = Permet l'ajout de titre et de sous-totaux sur les propositions commerciales, commandes et factures
 Module104777DescLong = Ajoute des titres, des textes libres et des sous-totaux aux documents commerciaux, avec prise en charge des factures de situation, des PDF et du périmètre Multicompany.
 
+About=À propos
+SubtotalAbout=À propos de Sous-Total
+SubtotalAboutPage=Informations, ressources et support du module Sous-Total
+SubtotalAboutGeneral=Informations générales
+SubtotalAboutVersion=Version
+SubtotalAboutFamily=Famille
+SubtotalAboutDescription=Description
+SubtotalAboutMaintainer=Éditeur
+SubtotalAboutResources=Ressources
+SubtotalAboutDocumentation=Documentation
+SubtotalAboutDocumentationLink=Consulter le README
+SubtotalAboutSupport=Support
+SubtotalAboutSupportValue=Contactez votre intégrateur ou le support Dolistore pour toute demande.
+SubtotalAboutContact=Page de l'éditeur
+
 Compatibility=Compatibilité
 CompatibilityComponent=Composant
 DetectedVersion=Version détectée

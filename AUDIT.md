@@ -1,6 +1,6 @@
 # Subtotal compliance audit
 
-## Decisions applied in 3.29.1
+## Decisions applied in 4.0.0
 
 - The family is `ATM Consulting x Les Métiers du Bâtiment`.
 - Historical module ID `104777` and line `special_code` values remain unchanged.
@@ -16,4 +16,3 @@
 - Two-entity Multicompany document generation and dictionary isolation.
 - PDF visual verification with long and HTML free text, intermediate footers and active footer hooks.
 - Dolibarr-aware PHPStan execution with the full core available.
-

@@ -2,6 +2,21 @@ Module104777Name = SubTotal
 Module104777Desc = Permite agregar títulos y subtotales a los presupuestos, pedidos y facturas
 Module104777DescLong = Añade títulos, textos libres y subtotales a los documentos comerciales, incluidas las facturas de situación, los PDF y el perímetro Multicompany.
 
+About=Acerca de
+SubtotalAbout=Acerca de SubTotal
+SubtotalAboutPage=Información, recursos y soporte del módulo SubTotal
+SubtotalAboutGeneral=Información general
+SubtotalAboutVersion=Versión
+SubtotalAboutFamily=Familia
+SubtotalAboutDescription=Descripción
+SubtotalAboutMaintainer=Editor
+SubtotalAboutResources=Recursos
+SubtotalAboutDocumentation=Documentación
+SubtotalAboutDocumentationLink=Consultar el README
+SubtotalAboutSupport=Soporte
+SubtotalAboutSupportValue=Contacte con su integrador o con el soporte de Dolistore para cualquier solicitud.
+SubtotalAboutContact=Página del editor
+
 Compatibility=Compatibilidad
 CompatibilityComponent=Componente
 DetectedVersion=Versión detectada

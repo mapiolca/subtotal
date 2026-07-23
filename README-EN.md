@@ -1,4 +1,4 @@
-# Subtotal 3.29.1
+# Subtotal 4.0.0
 
 Subtotal adds titles, subtitles, free text and subtotal rows to supported Dolibarr proposals, orders, invoices and supplier documents.
 

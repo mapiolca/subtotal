@@ -48,7 +48,7 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
         $this->family = 'ATM Consulting x Les Métiers du Bâtiment';
         $this->description = 'SubtotalTriggerDescription';
         // 'development', 'experimental', 'dolibarr' or version
-        $this->version = '3.29.1';
+        $this->version = '4.0.0';
         $this->picto = 'subtotal@subtotal';
     }
 

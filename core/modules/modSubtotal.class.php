@@ -68,7 +68,7 @@ class modSubtotal extends DolibarrModules
 		$this->description = 'Module104777Desc';
 		$this->descriptionlong = 'Module104777DescLong';
 		// Possible values for version are: 'development', 'experimental' or version
-		$this->version = '3.29.1';
+		$this->version = '4.0.0';
 
 		// Key used in llx_const table to save module status enabled/disabled
 		// (where MYMODULE is value of property name of module in uppercase)

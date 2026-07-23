@@ -611,9 +611,9 @@ class ActionsSubtotal
 				{
 					$out.= '
 						<tr class="oddeven">
-							<td colspan="4" align="right">
+							<td colspan="5" align="right">
 								<label for="subtotal_add_recap">'.$langs->trans('subtotal_add_recap').'</label>
-								<input type="checkbox" id="subtotal_add_recap" name="subtotal_add_recap" value="1" '.( GETPOST('subtotal_add_recap', 'none') ? 'checked="checked"' : '' ).' />
+								<input type="checkbox" id="subtotal_add_recap" name="subtotal_add_recap" value="1" '.(GETPOST('subtotal_add_recap', 'int') ? 'checked="checked"' : '').' />
 							</td>
 						</tr>';
 				}
@@ -3874,7 +3874,7 @@ class ActionsSubtotal
 
 		if ((getDolGlobalString('SUBTOTAL_PROPAL_ADD_RECAP') && $object->element == 'propal') || (getDolGlobalString('SUBTOTAL_COMMANDE_ADD_RECAP') && $object->element == 'commande') || (getDolGlobalString('SUBTOTAL_INVOICE_ADD_RECAP') && $object->element == 'facture'))
 		{
-			if (GETPOST('subtotal_add_recap', 'none')) {
+			if (GETPOST('subtotal_add_recap', 'int')) {
 				dol_include_once('/subtotal/class/subtotal.class.php');
 				TSubtotal::addRecapPage($parameters, $pdf);
 			}
