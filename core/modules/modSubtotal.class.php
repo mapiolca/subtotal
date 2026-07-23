@@ -44,7 +44,7 @@ class modSubtotal extends DolibarrModules
 		$this->db = $db;
 
 		$this->editor_name = 'ATM Consulting x Les Métiers du Bâtiment';
-		$this->editor_url = 'https://github.com/mapiolca/subtotal';
+		$this->editor_url = 'https://lesmetiersdubatiment.fr';
 		// Id for module (must be unique).
 		// Use a free id here
 		// (See in Home -> System information -> Dolibarr for list of used modules id).

@@ -23,7 +23,7 @@ foreach ($forbidden as $relativePath) {
 }
 
 $descriptor = is_file($root.'/core/modules/modSubtotal.class.php') ? file_get_contents($root.'/core/modules/modSubtotal.class.php') : '';
-foreach (array("'4.0.0'", "'ATM Consulting x Les Métiers du Bâtiment'", "'setup.php@subtotal'") as $needle) {
+foreach (array("'4.0.0'", "'ATM Consulting x Les Métiers du Bâtiment'", "'https://lesmetiersdubatiment.fr'", "'setup.php@subtotal'") as $needle) {
 	if (strpos($descriptor, $needle) === false) {
 		$errors[] = 'Descriptor does not contain '.$needle;
 	}
