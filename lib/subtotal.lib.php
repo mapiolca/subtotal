@@ -389,82 +389,123 @@ function _updateLine($element, $elementid, $lineid)
 
 
 /**
- * duplicate from action_submodule
- * @param $object
- * @param $line
- * @param false $use_level
- * @param int $return_all
- * @return array|float|int
+ * Return the ratio to apply to a situation invoice line during document generation.
+ *
+ * Dolibarr 23 provides this calculation natively. On older supported versions,
+ * legacy mode stores cumulative totals and needs a ratio, while mode 2 already
+ * stores the delta for the current situation.
+ *
+ * @param CommonObject     $object Invoice
+ * @param CommonObjectLine $line   Invoice line
+ * @return float
  */
-function getTotalLineFromObject(&$object, &$line, $use_level=false, $return_all=0) {
-	global $conf;
+function subtotalGetSituationLineRatio(&$object, &$line)
+{
+	if (version_compare(DOL_VERSION, '23.0.0', '>=') && method_exists($line, 'getSituationRatio')) {
+		return (float) $line->getSituationRatio();
+	}
 
-	$rang = $line->rang;
-	$qty_line = $line->qty;
+	if (getDolGlobalInt('INVOICE_USE_SITUATION') !== 1) {
+		return 1.0;
+	}
+
+	$situationPercent = isset($line->situation_percent) ? (float) $line->situation_percent : 0.0;
+	if ($situationPercent <= 0) {
+		return 0.0;
+	}
+
+	$previousProgress = 0.0;
+	if (method_exists($line, 'get_prev_progress')) {
+		$previousProgress = (float) $line->get_prev_progress((int) $object->id);
+	}
+
+	return ($situationPercent - $previousProgress) / $situationPercent;
+}
+
+/**
+ * Return the subtotal values for a document block.
+ *
+ * @param CommonObject     $object     Document
+ * @param CommonObjectLine $line       Subtotal line
+ * @param bool             $use_level  Reserved for backward compatibility
+ * @param int              $return_all Return all totals when set to 1
+ * @return array<int, float|array<string, float>>|float
+ */
+function getTotalLineFromObject(&$object, &$line, $use_level=false, $return_all=0)
+{
+	$rang = (int) $line->rang;
 	$lvl = 0;
-	if (TSubtotal::isSubtotal($line)) $lvl = TSubtotal::getNiveau($line);
+	if (TSubtotal::isSubtotal($line)) {
+		$lvl = TSubtotal::getNiveau($line);
+	}
 
-	$title_break = TSubtotal::getParentTitleOfLine($object, $rang, $lvl);
+	$titleBreak = TSubtotal::getParentTitleOfLine($object, $rang, $lvl);
 
-	$total = 0;
-	$total_tva = 0;
-	$total_ttc = 0;
-	$TTotal_tva = array();
+	$total = 0.0;
+	$totalTva = 0.0;
+	$totalTtc = 0.0;
+	$totalQty = 0.0;
+	/** @var array<string, float> $totalTvaByRate */
+	$totalTvaByRate = array();
 
+	$sign = 1;
+	if (isset($object->type) && $object->type == 2 && getDolGlobalString('INVOICE_POSITIVE_CREDIT_NOTE')) {
+		$sign = -1;
+	}
 
-	$sign=1;
-	if (isset($object->type) && $object->type == 2 && getDolGlobalString('INVOICE_POSITIVE_CREDIT_NOTE')) $sign=-1;
-
-	if (GETPOST('action', 'none') == 'builddoc') $builddoc = true;
-	else $builddoc = false;
+	$applySituationRatio = GETPOST('action', 'none') === 'builddoc'
+		&& isset($object->element, $object->type)
+		&& $object->element === 'facture'
+		&& $object->type == Facture::TYPE_SITUATION;
 
 	dol_include_once('/subtotal/class/subtotal.class.php');
 
-	$TLineReverse = array_reverse($object->lines);
+	$linesReversed = array_reverse($object->lines);
 
-	foreach($TLineReverse as $l)
-	{
-		$l->total_ttc = doubleval($l->total_ttc);
-		$l->total_ht = doubleval($l->total_ht);
-
-		//print $l->rang.'>='.$rang.' '.$total.'<br/>';
-		if ($l->rang>=$rang) continue;
-		if (!empty($title_break) && $title_break->id == $l->id) break;
-		elseif (!TSubtotal::isModSubtotalLine($l))
-		{
-			// TODO retirer le test avec $builddoc quand Dolibarr affichera le total progression sur la card et pas seulement dans le PDF
-			if ($builddoc && $object->element == 'facture' && $object->type==Facture::TYPE_SITUATION)
-			{
-				if ($l->situation_percent > 0 && !empty($l->total_ht))
-				{
-					$prev_progress = 0;
-					$progress = 1;
-					if (method_exists($l, 'get_prev_progress'))
-					{
-						$prev_progress = $l->get_prev_progress($object->id);
-						$progress = ($l->situation_percent - $prev_progress) / 100;
-					}
-
-					$result = $sign * ($l->total_ht / ($l->situation_percent / 100)) * $progress;
-					$total+= $result;
-					// TODO check si les 3 lignes du dessous sont corrects
-					$total_tva += $sign * ($l->total_tva / ($l->situation_percent / 100)) * $progress;
-					$TTotal_tva[$l->tva_tx] += $sign * ($l->total_tva / ($l->situation_percent / 100)) * $progress;
-					$total_ttc += $sign * ($l->total_tva / ($l->total_ttc / 100)) * $progress;
-
-				}
-			}
-			else
-			{
-				if ($l->product_type != 9) {
-					$total += $l->total_ht;
-					$total_tva += $l->total_tva;
-					$TTotal_tva[$l->tva_tx] += $l->total_tva;
-					$total_ttc += $l->total_ttc;
-				}
-			}
+	foreach ($linesReversed as $documentLine) {
+		if ((int) $documentLine->rang >= $rang) {
+			continue;
 		}
+		if (is_object($titleBreak) && $titleBreak->id == $documentLine->id) {
+			break;
+		}
+		if (TSubtotal::isModSubtotalLine($documentLine)) {
+			continue;
+		}
+
+		$totalQty += (float) $documentLine->qty;
+
+		if (!$applySituationRatio && $documentLine->product_type == 9) {
+			continue;
+		}
+
+		$ratio = $applySituationRatio ? subtotalGetSituationLineRatio($object, $documentLine) : 1.0;
+		$lineSign = $applySituationRatio ? $sign : 1;
+		$vatRate = (string) $documentLine->tva_tx;
+		$lineTotalHt = $lineSign * (float) $documentLine->total_ht * $ratio;
+		$lineTotalTva = $lineSign * (float) $documentLine->total_tva * $ratio;
+		$lineTotalTtc = $lineSign * (float) $documentLine->total_ttc * $ratio;
+
+		$total += $lineTotalHt;
+		$totalTva += $lineTotalTva;
+		$totalTtc += $lineTotalTtc;
+
+		if (!isset($totalTvaByRate[$vatRate])) {
+			$totalTvaByRate[$vatRate] = 0.0;
+		}
+		$totalTvaByRate[$vatRate] += $lineTotalTva;
 	}
-	if (!$return_all) return $total;
-	else return array($total, $total_tva, $total_ttc, $TTotal_tva);
+
+	$total = (float) price2num($total, 'MT');
+	$totalTva = (float) price2num($totalTva, 'MT');
+	$totalTtc = (float) price2num($totalTtc, 'MT');
+	foreach ($totalTvaByRate as $vatRate => $vatTotal) {
+		$totalTvaByRate[$vatRate] = (float) price2num($vatTotal, 'MT');
+	}
+
+	if (!$return_all) {
+		return $total;
+	}
+
+	return array($total, $totalTva, $totalTtc, $totalTvaByRate, $totalQty);
 }
