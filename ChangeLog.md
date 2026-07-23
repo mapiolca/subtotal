@@ -1,7 +1,20 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-# [Unreleased]
+# Release 3.29.1 - 23/07/2026
+
+- Sécurisation des actions Ajax : POST, jeton CSRF Dolibarr, liste blanche d’actions, droits natifs, document parent et entité contrôlés.
+- Sécurisation de l’API REST : types autorisés, droits de lecture, contrôle Multicompany et suppression des requêtes SQL construites depuis l’entrée.
+- Correction du rendu des titres, textes libres et sous-totaux sur les factures de situation selon le nombre réel de colonnes affichées.
+- Correction de la marge des sous-totaux des factures de situation : somme des marges de lignes avec coûts et montants proratisés selon l’avancement propre à chaque ligne.
+- Nouvelle administration native avec une seule roue dentée, onglets Réglages, Compatibilité et À propos.
+- Famille renommée `ATM Consulting x Les Métiers du Bâtiment` et version alignée sur `3.29.1`.
+- Conservation de l’identifiant historique `104777`, utilisé par les lignes comme `special_code`.
+- Prise en charge documentaire Multicompany et réservation renforcée des pieds de page PDF.
+- Suppression des copies de fichiers core, de l’aide demandant un remplacement du core et de la page À propos distante.
+- Conversion des anciennes migrations web en commandes CLI protégées et en lecture seule par défaut.
+- Ajout des index du dictionnaire de textes libres, de contrôles statiques et de la configuration PHPStan du module.
+
 ## Release 3.29
 - NEW : COMPAT 22 - *02/07/2025* - 3.29.0
 

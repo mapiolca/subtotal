@@ -38,7 +38,7 @@ class SubTotalJsonResponse{
 	public $newToken = '';
 
 	public function __construct(){
-		$this->newToken = newToken();
+		$this->newToken = function_exists('newToken') ? newToken() : (!empty($_SESSION['newtoken']) ? $_SESSION['newtoken'] : '');
 	}
 
 	/**
@@ -53,6 +53,6 @@ class SubTotalJsonResponse{
 		$jsonResponse->data = $this->data;
 		$jsonResponse->debug = $this->debug;
 
-		return json_encode($jsonResponse, JSON_PRETTY_PRINT);
+		return json_encode($jsonResponse, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 	}
 }

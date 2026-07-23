@@ -1,0 +1,14 @@
+parameters:
+	level: 5
+	phpVersion: 70000
+	paths:
+		- admin
+		- class
+		- core
+		- lib
+		- scripts
+	excludePaths:
+		analyse:
+			- core/modules/*/doc/*
+	reportUnmatchedIgnoredErrors: true
+

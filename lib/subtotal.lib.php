@@ -25,25 +25,31 @@
 
 function subtotalAdminPrepareHead()
 {
-    global $langs, $conf;
+	global $langs, $conf;
 
-    $langs->load("subtotal@subtotal");
+	$langs->load("subtotal@subtotal");
 
-    $h = 0;
-    $head = array();
+	$h = 0;
+	$head = array();
 
-    $head[$h][0] = dol_buildpath("/subtotal/admin/subtotal_setup.php", 1);
-    $head[$h][1] = $langs->trans("Parameters");
-    $head[$h][2] = 'settings';
-    $h++;
-    $head[$h][0] = dol_buildpath("/subtotal/admin/subtotal_about.php", 1);
-    $head[$h][1] = $langs->trans("About");
-    $head[$h][2] = 'about';
-    $h++;
+	$head[$h][0] = dol_buildpath("/subtotal/admin/setup.php", 1);
+	$head[$h][1] = $langs->trans("Settings");
+	$head[$h][2] = 'settings';
+	$h++;
 
-    complete_head_from_modules($conf, $langs, null, $head, $h, 'subtotal', $showLabel=false);
+	$head[$h][0] = dol_buildpath("/subtotal/admin/compatibility.php", 1);
+	$head[$h][1] = $langs->trans("Compatibility");
+	$head[$h][2] = 'compatibility';
+	$h++;
 
-    return $head;
+	$head[$h][0] = dol_buildpath("/subtotal/admin/about.php", 1);
+	$head[$h][1] = $langs->trans("About");
+	$head[$h][2] = 'about';
+	$h++;
+
+	complete_head_from_modules($conf, $langs, null, $head, $h, 'subtotal', false);
+
+	return $head;
 }
 
 function getHtmlSelectTitle(&$object, $showLabel=false)
@@ -75,7 +81,7 @@ function getTFreeText()
 
 	$TFreeText = array();
 
-	$sql = 'SELECT rowid, label, content, active, entity FROM '.MAIN_DB_PREFIX.'c_subtotal_free_text WHERE active = 1 AND entity = '.$conf->entity.' ORDER BY label';
+	$sql = 'SELECT rowid, label, content, active, entity FROM '.MAIN_DB_PREFIX.'c_subtotal_free_text WHERE active = 1 AND entity = '.((int) $conf->entity).' ORDER BY label';
 	$resql = $db->query($sql);
 
 	if ($resql)
@@ -187,6 +193,8 @@ function _updateSubtotalBloc($object, $line)
 {
 	global $conf,$langs;
 
+	$success_updated_line = 0;
+	$error_updated_line = 0;
 	$subtotal_tva_tx = $subtotal_tva_tx_init = GETPOST('subtotal_tva_tx', 'int');
 	$subtotal_progress = $subtotal_progress_init = GETPOST('subtotal_progress', 'int');
 	$array_options = $line->array_options;
@@ -269,50 +277,39 @@ function _updateLineNC($element, $elementid, $lineid, $subtotal_nc=null, $notrig
 	global $db,$langs,$tmp_object_nc;
 
 	$error = 0;
-	if (empty($element)) $error++;
+	$object = null;
+	$line = null;
+	$result = 0;
+
+	if (empty($element) || (int) $elementid <= 0 || (int) $lineid <= 0) {
+		return -1;
+	}
+
+	dol_include_once('/subtotal/class/subtotalaccess.class.php');
 
 	if (!$error)
 	{
-		if (!empty($tmp_object_nc) && $tmp_object_nc->element == $element && $tmp_object_nc->id == $elementid)
+		$normalizedElement = SubtotalAccess::normalizeElement($element);
+		if (!empty($tmp_object_nc) && SubtotalAccess::normalizeElement($tmp_object_nc->element) === $normalizedElement && (int) $tmp_object_nc->id === (int) $elementid)
 		{
 			$object = $tmp_object_nc;
 		}
 		else
 		{
-			$classname = ucfirst($element);
-
-			switch ($element) {
-			    case 'supplier_proposal':
-			        $classname = 'SupplierProposal';
-			        break;
-
-			    case 'order_supplier':
-			        $classname = 'CommandeFournisseur';
-			        break;
-
-			    case 'invoice_supplier':
-			        $classname = 'FactureFournisseur';
-			        break;
+			$object = SubtotalAccess::fetchObject($normalizedElement, (int) $elementid);
+			if (!is_object($object)) {
+				$error++;
+			} else {
+				$tmp_object_nc = $object;
 			}
-
-			$object = new $classname($db); // Propal | Commande | Facture
-			$res = $object->fetch($elementid);
-			if ($res < 0) $error++;
-			else $tmp_object_nc = $object;
 		}
 	}
 
-	if (!$error)
+	if (!$error && is_object($object))
 	{
-		foreach ($object->lines as &$l)
-		{
-			if($l->id == $lineid) {
-				$line = $l;
-				break;
-			}
-		}
+		$line = SubtotalAccess::findLine($object, (int) $lineid);
 
-		if (!empty($line))
+		if (is_object($line))
 		{
 			$db->begin();
 
@@ -323,30 +320,43 @@ function _updateLineNC($element, $elementid, $lineid, $subtotal_nc=null, $notrig
 					$TTitleBlock = TSubtotal::getLinesFromTitleId($object, $lineid, true);
 					foreach($TTitleBlock as &$line_block)
 					{
-						$res = doUpdate($object, $line_block, $subtotal_nc, $notrigger);
+						$result = doUpdate($object, $line_block, $subtotal_nc, $notrigger);
+						if ($result <= 0) {
+							$error++;
+							break;
+						}
 					}
 				}
 			}
 			else
 			{
-				$res = doUpdate($object, $line, $subtotal_nc, $notrigger);
+				$result = doUpdate($object, $line, $subtotal_nc, $notrigger);
+				if ($result <= 0) {
+					$error++;
+				}
 			}
 
-			$res = $object->update_price(1);
-			if ($res <= 0) $error++;
+			if (!$error) {
+				$result = $object->update_price(1);
+				if ($result <= 0) {
+					$error++;
+				}
+			}
 
 			if (!$error)
 			{
 				setEventMessage($langs->trans('subtotal_update_nc_success'));
 				$db->commit();
+				return 1;
 			}
-			else
-			{
-				setEventMessage($langs->trans('subtotal_update_nc_error'), 'errors');
-				$db->rollback();
-			}
+
+			setEventMessage($langs->trans('subtotal_update_nc_error'), 'errors');
+			$db->rollback();
+			return -1;
 		}
 	}
+
+	return $error ? -1 : 0;
 }
 
 function doUpdate(&$object, &$line, $subtotal_nc, $notrigger = 0)
@@ -354,6 +364,14 @@ function doUpdate(&$object, &$line, $subtotal_nc, $notrigger = 0)
 	global $user, $conf;
 
 	if (TSubtotal::isFreeText($line) || TSubtotal::isSubtotal($line)) return 1;
+	if (empty($line->array_options) || !is_array($line->array_options)) {
+		if ($line->fetch_optionals() < 0) {
+			return -1;
+		}
+	}
+	if (empty($line->array_options) || !is_array($line->array_options)) {
+		$line->array_options = array();
+	}
 	// Update extrafield et total
 	if(! empty($subtotal_nc)) {
 		$line->total_ht = $line->total_tva = $line->total_ttc = $line->total_localtax1 = $line->total_localtax2 =
@@ -375,7 +393,6 @@ function doUpdate(&$object, &$line, $subtotal_nc, $notrigger = 0)
 	        $line->fetch_optionals($line->id,$extralabels);
 	    }
 		$line->array_options['options_subtotal_nc'] = 0;
-		if($object->element == 'order_supplier') $line->update($user);
 		$res = TSubtotal::doUpdateLine($object, $line->id, $line->desc, $line->subprice, $line->qty, $line->remise_percent, $line->date_start, $line->date_end, $line->tva_tx, $line->product_type, $line->localtax1_tx, $line->localtax2_tx, 'HT', $line->info_bits, $line->fk_parent_line, $line->skip_update_total, $line->fk_fournprice, $line->pa_ht, $line->label, $line->special_code, $line->array_options, $line->situation_percent, $line->fk_unit, $notrigger);
 	}
 

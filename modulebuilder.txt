@@ -1,0 +1,2 @@
+Subtotal module maintained with Dolibarr ModuleBuilder conventions.
+

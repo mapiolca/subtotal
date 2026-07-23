@@ -45,10 +45,10 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
         $this->db = $db;
 
         $this->name = preg_replace('/^Interface/i', '', get_class($this));
-        $this->family = "demo";
-        $this->description = "Triggers of this module are subtotal functions.";
+        $this->family = 'ATM Consulting x Les Métiers du Bâtiment';
+        $this->description = 'SubtotalTriggerDescription';
         // 'development', 'experimental', 'dolibarr' or version
-        $this->version = 'development';
+        $this->version = '3.29.1';
         $this->picto = 'subtotal@subtotal';
     }
 
@@ -69,7 +69,10 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
      */
     public function getDesc()
     {
-        return $this->description;
+        global $langs;
+
+        $langs->load('subtotal@subtotal');
+        return $langs->trans($this->description);
     }
 
     /**
@@ -156,7 +159,6 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
      */
     public function runTrigger($action, $object, User $user, Translate $langs, Conf $conf)
     {
-		global $user;
        #COMPATIBILITÉ V16
 		require_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
 		require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
@@ -167,11 +169,7 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
 		}
 
 		if ($action == 'LINEORDER_UPDATE'){
-			$action == 'LINEORDER_MODIFY';
-		}
-
-		if ($action == 'LINEBILL_UPDATE'){
-			$action = 'LINEBILL_MODIFY';
+			$action = 'LINEORDER_MODIFY';
 		}
 
 		if ($action == 'LINEBILL_SUPPLIER_UPDATE'){
@@ -182,9 +180,9 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
 			static $TInvoices = array();
 			if (!array_key_exists($object->fk_facture, $TInvoices) || (array_key_exists($object->fk_facture, $TInvoices) && $TInvoices[$object->fk_facture] === null)) {
 				$staticInvoice = new Facture($this->db);
-				if ($staticInvoice->fetch($object->fk_facture) < 0){
+				if ($staticInvoice->fetch($object->fk_facture) <= 0){
 					$object->error = $staticInvoice->error;
-					$object->errors []= $staticInvoice->errors;
+					$object->errors = $staticInvoice->errors;
 					return -1;
 				}
 				$isEligible = $staticInvoice->type == Facture::TYPE_DEPOSIT && GETPOST('typedeposit', 'aZ09') == "variablealllines";
@@ -193,10 +191,11 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
 			if ($TInvoices[$object->fk_facture]) {
 				if (!empty($object->origin) && !empty($object->origin_id) && $object->special_code == TSubtotal::$module_number){
 					$valuedeposit = price2num(str_replace('%', '', GETPOST('valuedeposit', 'alpha')), 'MU');
+					if ((float) $valuedeposit <= 0) {
+						return -1;
+					}
 					$object->qty = 100 * $object->qty / $valuedeposit;
-					if ($object->update('', 1) < 0){
-						$object->error = $object->error;
-						$object->errors []= $object->errors;
+					if ($object->update($user, 1) < 0){
 						return -1;
 					}
 				}
@@ -228,7 +227,7 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
 
             $originSendingLineFetchReturn = $originSendingLine->fetch($object->origin_id);
 
-            if ($originSendingLineFetchReturn < 0) {
+            if ($originSendingLineFetchReturn <= 0) {
                 $this->error = $originSendingLine->error;
                 $this->errors = $originSendingLine->errors;
                 return $originSendingLineFetchReturn;
@@ -237,9 +236,15 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
             require_once DOL_DOCUMENT_ROOT . '/commande/class/commande.class.php';
             $originOrderLine = new OrderLine($this->db);
 
-			$originOrderLineFetchReturn = $originOrderLine->fetch($originSendingLine->fk_elementdet ?? $originSendingLine->fk_elementdet);
+			$originOrderLineId = !empty($originSendingLine->fk_elementdet)
+				? (int) $originSendingLine->fk_elementdet
+				: (!empty($originSendingLine->origin_line_id) ? (int) $originSendingLine->origin_line_id : 0);
+			if ($originOrderLineId <= 0) {
+				return -1;
+			}
+			$originOrderLineFetchReturn = $originOrderLine->fetch($originOrderLineId);
 
-            if ($originOrderLineFetchReturn < 0) {
+            if ($originOrderLineFetchReturn <= 0) {
                 $this->error = $originOrderLine->error;
                 $this->errors = $originOrderLine->errors;
                 return $originOrderLineFetchReturn;
@@ -377,7 +382,7 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
 
 		}
 
-		if ($action == 'LINEBILL_UPDATE' || 'LINEBILL_MODIFY')
+		if (in_array($action, array('LINEBILL_UPDATE', 'LINEBILL_MODIFY'), true))
 		{
 			if (GETPOST('all_progress', 'none') && TSubtotal::isModSubtotalLine($object))
 			{

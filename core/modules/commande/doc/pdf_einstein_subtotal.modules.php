@@ -28,6 +28,7 @@
 
 require_once DOL_DOCUMENT_ROOT .'/core/modules/commande/modules_commande.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
+dol_include_once('/subtotal/lib/subtotal_pdf.lib.php');
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/pdf.lib.php';
@@ -158,7 +159,8 @@ class pdf_einstein_subtotal extends ModelePDFCommandes
 
 		$nblignes = count($object->lines);
 
-		if ($conf->commande->dir_output)
+		$outputBase = subtotalPdfGetOutputBase($object, 'commande');
+		if ($outputBase)
 		{
             $object->fetch_thirdparty();
 			if(!empty($object->client) ){
@@ -169,13 +171,13 @@ class pdf_einstein_subtotal extends ModelePDFCommandes
             // Definition of $dir and $file
 			if ($object->specimen)
 			{
-				$dir = $conf->commande->dir_output;
+				$dir = $outputBase;
 				$file = $dir . "/SPECIMEN.pdf";
 			}
 			else
 			{
 				$objectref = dol_sanitizeFileName($object->ref);
-				$dir = $conf->commande->dir_output . "/" . $objectref;
+				$dir = $outputBase . "/" . $objectref;
 				$file = $dir . "/" . $objectref . ".pdf";
 			}
 
@@ -206,7 +208,7 @@ class pdf_einstein_subtotal extends ModelePDFCommandes
 				$default_font_size = pdf_getPDFFontSize($outputlangs);	// Must be after pdf_getInstance
 				$heightforinfotot = 50;	// Height reserved to output the info and total part
 				$heightforfreetext= floatval(getDolGlobalString('MAIN_PDF_FREETEXT_HEIGHT', 5));
-	            $heightforfooter = $this->marge_basse + 8;	// Height reserved to output the footer (value include bottom margin)
+	            $heightforfooter = subtotalPdfGetFooterHeight($this->marge_basse);
                 $pdf->SetAutoPageBreak(1,0);
 
                 if (class_exists('TCPDF'))
@@ -218,7 +220,7 @@ class pdf_einstein_subtotal extends ModelePDFCommandes
                 // Set path to the background PDF File
                 if (!getDolGlobalString('MAIN_DISABLE_FPDI') && getDolGlobalString('MAIN_ADD_PDF_BACKGROUND'))
                 {
-                    $pagecount = $pdf->setSourceFile($conf->mycompany->dir_output.'/' . getDolGlobalString('MAIN_ADD_PDF_BACKGROUND'));
+                    $pagecount = $pdf->setSourceFile(subtotalPdfGetCompanyOutputBase($object->entity).'/' . getDolGlobalString('MAIN_ADD_PDF_BACKGROUND'));
                     $tplidx = $pdf->importPage(1);
                 }
 
@@ -426,7 +428,7 @@ class pdf_einstein_subtotal extends ModelePDFCommandes
 					$pageposafter=$pdf->getPage();
 					$pdf->setPage($pageposbefore);
 					$pdf->setTopMargin($this->marge_haute);
-					$pdf->setPageOrientation('', 1, 0);	// The only function to edit the bottom margin of current page to set it.
+					$pdf->setPageOrientation('', 1, $heightforfooter);
 
 					// We suppose that a too long description is moved completely on next page
 					if ($pageposafter > $pageposbefore && empty($showpricebeforepagebreak)) {
@@ -572,7 +574,7 @@ class pdf_einstein_subtotal extends ModelePDFCommandes
 						$this->_pagefoot($pdf,$object,$outputlangs,1);
 						$pagenb++;
 						$pdf->setPage($pagenb);
-						$pdf->setPageOrientation('', 1, 0);	// The only function to edit the bottom margin of current page to set it.
+						$pdf->setPageOrientation('', 1, $heightforfooter);
 						if (!getDolGlobalString('MAIN_PDF_DONOTREPEAT_HEAD')) $this->_pagehead($pdf, $object, 0, $outputlangs);
 					}
 					if (isset($object->lines[$i+1]->pagebreak) && $object->lines[$i+1]->pagebreak)
@@ -1243,7 +1245,7 @@ class pdf_einstein_subtotal extends ModelePDFCommandes
 		$pdf->SetXY($this->marge_gauche,$posy);
 
 		// Logo
-		$logo=$conf->mycompany->dir_output.'/logos/'.$this->emetteur->logo;
+		$logo = subtotalPdfGetCompanyOutputBase($object->entity).'/logos/'.$this->emetteur->logo;
 		if ($this->emetteur->logo)
 		{
 			if (is_readable($logo))

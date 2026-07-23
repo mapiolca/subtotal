@@ -29,6 +29,7 @@
 require_once DOL_DOCUMENT_ROOT.'/core/modules/facture/modules_facture.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
+dol_include_once('/subtotal/lib/subtotal_pdf.lib.php');
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/pdf.lib.php';
 
@@ -169,7 +170,10 @@ class pdf_crabe_subtotal extends ModelePDFFactures
 				$objphoto->fetch($object->lines[$i]->fk_product);
 
 				$pdir = get_exdir($object->lines[$i]->fk_product,2) . $object->lines[$i]->fk_product ."/photos/";
-				$dir = $conf->product->dir_output.'/'.$pdir;
+				$productOutputBase = !empty($conf->product->multidir_output[$objphoto->entity])
+					? $conf->product->multidir_output[$objphoto->entity]
+					: $conf->product->dir_output;
+				$dir = $productOutputBase.'/'.$pdir;
 
 				$realpath='';
 				foreach ($objphoto->liste_photos($dir,1) as $key => $obj)
@@ -185,7 +189,8 @@ class pdf_crabe_subtotal extends ModelePDFFactures
 		}
 		if (count($realpatharray) == 0) $this->posxpicture=$this->posxtva;
 
-		if ($conf->facture->dir_output)
+		$outputBase = subtotalPdfGetOutputBase($object, 'facture');
+		if ($outputBase)
 		{
 			$object->fetch_thirdparty();
 			if(!empty($object->client) ){
@@ -198,13 +203,13 @@ class pdf_crabe_subtotal extends ModelePDFFactures
 			// Definition of $dir and $file
 			if ($object->specimen)
 			{
-				$dir = $conf->facture->dir_output;
+				$dir = $outputBase;
 				$file = $dir . "/SPECIMEN.pdf";
 			}
 			else
 			{
 				$objectref = dol_sanitizeFileName($object->ref);
-				$dir = $conf->facture->dir_output . "/" . $objectref;
+				$dir = $outputBase . "/" . $objectref;
 				$file = $dir . "/" . $objectref . ".pdf";
 			}
 			if (! file_exists($dir))
@@ -234,7 +239,7 @@ class pdf_crabe_subtotal extends ModelePDFFactures
                 $default_font_size = pdf_getPDFFontSize($outputlangs);	// Must be after pdf_getInstance
 				$heightforinfotot = 50;	// Height reserved to output the info and total part
 		        $heightforfreetext= floatval(getDolGlobalString('MAIN_PDF_FREETEXT_HEIGHT', 5));	// Height reserved to output the free text on last page
-	            $heightforfooter = $this->marge_basse + 8;	// Height reserved to output the footer (value include bottom margin)
+	            $heightforfooter = subtotalPdfGetFooterHeight($this->marge_basse);
                 $pdf->SetAutoPageBreak(1,0);
 
                 if (class_exists('TCPDF'))
@@ -247,7 +252,7 @@ class pdf_crabe_subtotal extends ModelePDFFactures
                 // Set path to the background PDF File
                 if (!getDolGlobalString('MAIN_DISABLE_FPDI') && getDolGlobalString('MAIN_ADD_PDF_BACKGROUND'))
                 {
-				    $pagecount = $pdf->setSourceFile($conf->mycompany->dir_output.'/' . getDolGlobalString('MAIN_ADD_PDF_BACKGROUND'));
+				    $pagecount = $pdf->setSourceFile(subtotalPdfGetCompanyOutputBase($object->entity).'/' . getDolGlobalString('MAIN_ADD_PDF_BACKGROUND'));
 				    $tplidx = $pdf->importPage(1);
                 }
 
@@ -482,7 +487,7 @@ class pdf_crabe_subtotal extends ModelePDFFactures
 					$pageposafter=$pdf->getPage();
 					$pdf->setPage($pageposbefore);
 					$pdf->setTopMargin($this->marge_haute);
-					$pdf->setPageOrientation('', 1, 0);	// The only function to edit the bottom margin of current page to set it.
+					$pdf->setPageOrientation('', 1, $heightforfooter);
 
 					// We suppose that a too long description or photo were moved completely on next page
 					if ($pageposafter > $pageposbefore && empty($showpricebeforepagebreak)) {
@@ -628,7 +633,7 @@ class pdf_crabe_subtotal extends ModelePDFFactures
 						$this->_pagefoot($pdf,$object,$outputlangs,1);
 						$pagenb++;
 						$pdf->setPage($pagenb);
-						$pdf->setPageOrientation('', 1, 0);	// The only function to edit the bottom margin of current page to set it.
+						$pdf->setPageOrientation('', 1, $heightforfooter);
 						if (!getDolGlobalString('MAIN_PDF_DONOTREPEAT_HEAD')) $this->_pagehead($pdf, $object, 0, $outputlangs);
 					}
 					if (isset($object->lines[$i+1]->pagebreak) && $object->lines[$i+1]->pagebreak)
@@ -1437,7 +1442,7 @@ class pdf_crabe_subtotal extends ModelePDFFactures
 		$pdf->SetXY($this->marge_gauche,$posy);
 
 		// Logo
-		$logo=$conf->mycompany->dir_output.'/logos/'.$this->emetteur->logo;
+		$logo = subtotalPdfGetCompanyOutputBase($object->entity).'/logos/'.$this->emetteur->logo;
 		if ($this->emetteur->logo)
 		{
 			if (is_readable($logo))

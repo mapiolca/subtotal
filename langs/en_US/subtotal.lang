@@ -2,6 +2,60 @@
 
 Module104777Name = SubTotal
 Module104777Desc = Allows to add titles and subtotals in proposal, orders and invoices
+Module104777DescLong = Adds titles, free text and subtotals to commercial documents, including situation invoices, PDF output and Multicompany boundaries.
+
+Compatibility=Compatibility
+CompatibilityComponent=Component
+DetectedVersion=Detected version
+MinimumVersion=Minimum version
+MinimumDolibarrVersion=Minimum Dolibarr version
+MinimumPHPVersion=Minimum PHP version
+CoreAvailableFrom=Available in core from
+ModuleAvailableFrom=Available in module from
+CompatibilityCheck=Activation check
+Available=Available
+Unavailable=Unavailable
+Feature=Feature
+Reason=Reason
+Publisher=Publisher
+License=License
+SubtotalCompatibilitySummary=Dolibarr %s+ and PHP %s+
+SubtotalNoRequiredDependency=No required dependency
+SubtotalMainFeatures=Titles, free text, subtotals, groups, PDF summaries and situation invoices
+CompatibilityFeatureDocumentHooks=Commercial document integration
+CompatibilityFeatureDocumentHooksDescription=Native commercial card, list and PDF model hooks
+CompatibilityFeatureProtectedAjax=Protected Ajax actions
+CompatibilityFeatureProtectedAjaxDescription=Server-side session, CSRF token, permission and entity checks
+CompatibilityFeatureRestApi=REST API
+CompatibilityFeatureRestApiDescription=Secure subtotal reads through the Dolibarr API
+CompatibilityFeatureMultientityDocuments=Multientity documents
+CompatibilityFeatureMultientityDocumentsDescription=Document directories are resolved from the owning entity
+CompatibilityFeatureHookParent=Hooks without core copies
+CompatibilityFeatureHookParentDescription=The module no longer depends on a local CommonHookActions copy
+CompatibilityReasonBaseVersion=The Dolibarr or PHP version is below the module minimum
+SubtotalSectionGeneral=General behavior
+SubtotalSectionDisplay=Title, free text and subtotal display
+SubtotalSectionDocuments=Documents and shipments
+SubtotalShowTotalHt=Show the subtotal amount excluding tax
+SubtotalShowDiscount=Show the discount on the subtotal
+SubtotalShowQuantity=Show the subtotal quantity
+SubtotalHideBlock=Hide the lines contained in this title
+SubtotalNotIncluded=Not included
+SubtotalAjaxPostRequired=This action must use POST
+ModuleNotEnabled=The module is not enabled
+ErrorBadToken=The security token is missing or invalid
+ErrorFetchingElement=The requested document could not be loaded
+NotEnoughPermissions=Insufficient permissions
+SubtotalLineNotFound=Subtotal line not found
+SubtotalAjaxMissingStatusList=No folder status was provided
+SubtotalAjaxUpdateFailed=The folder update failed
+SubtotalAjaxUnknownAction=Unknown Ajax action
+SubtotalObjectNotEditable=The document is no longer editable
+SubtotalApiInvalidLineId=The line identifier is invalid
+SubtotalApiUnsupportedElement=This document type is not supported
+SubtotalApiUnavailableClass=The required business class is unavailable
+SubtotalParentNotFound=The parent document was not found
+SubtotalApiLineIsNotSubtotal=The requested line is not a subtotal
 
 ATMAbout = This module has been developed by <a href="https://www.atm-consulting.fr" target="_blank">ATM Consulting</a><br>You can find the documentation on our <a href="https://wiki.atm-consulting.fr/index.php/Accueil" target="_blank">wiki</a><br><br>For any question or feedback, contact us on <a href="mailto:support@atm-consulting.fr">support@atm-consulting.fr</a><br><br>For any commercial question, contact us on <a href="mailto:contact@atm-consulting.fr">contact@atm-consulting.fr</a> or at +33 9 77 19 50 70<br><br>Find our other modules on <a href="https://www.dolistore.com/search.php?orderby=position&orderway=desc&search_query=atm&submit_search=Rechercher" target="_blank">Dolistore</a>
 
@@ -146,3 +200,16 @@ AddShippingListToTile = Add the reference list of related delivery or shipping n
 UseHiddenConfToAutoCheck = To pre-set the default, you can activate the settings
 
 SubtotalsAndTitlesActionBtnLabel = Title & Sub total
+ErrorClassXNotExists=ERROR: PHP class %s is not loaded
+HideSubtitleOnFold=Hide child title and subtotal lines
+KeepSubtitleDisplayOnFold=Show child title and subtotal lines
+NumberOfHiddenLines=Number of hidden lines
+SUBTOTAL_BLOC_FOLD_MODE=Behavior to apply when hiding a title block
+Subtotal_ForceHideAll=Hide all block lines and all lower-level title block lines
+Subtotal_ForceShowAll=Show all block lines and all lower-level title block lines
+Subtotal_Hide=Hide lines
+Subtotal_Show=Show lines
+SUBTOTAL_TEXT_LINE_STYLE=Free-text style (B = bold, U = underlined, I = italic)
+SubtotalTriggerDescription=Subtotal module business triggers
+UsefulLinks=Useful links
+Repository=Source repository

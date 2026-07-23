@@ -43,7 +43,8 @@ class modSubtotal extends DolibarrModules
 
 		$this->db = $db;
 
-		$this->editor_name = 'ATM Consulting';
+		$this->editor_name = 'ATM Consulting x Les Métiers du Bâtiment';
+		$this->editor_url = 'https://github.com/mapiolca/subtotal';
 		// Id for module (must be unique).
 		// Use a free id here
 		// (See in Home -> System information -> Dolibarr for list of used modules id).
@@ -54,7 +55,14 @@ class modSubtotal extends DolibarrModules
 		// Family can be 'crm','financial','hr','projects','products','ecm','technic','other'
 		// It is used to group modules in module setup page
 
-		$this->family = "ATM Consulting - CRM";
+		$this->family = 'ATM Consulting x Les Métiers du Bâtiment';
+		$this->module_position = '500';
+		$this->familyinfo = array(
+			$this->family => array(
+				'position' => '500',
+				'label' => $this->family,
+			),
+		);
 
 		// Module label (no space allowed)
 		// used if translation string 'ModuleXXXName' not found
@@ -63,14 +71,10 @@ class modSubtotal extends DolibarrModules
 		// Module description
 		// used if translation string 'ModuleXXXDesc' not found
 		// (where XXX is value of numeric property 'numero' of module)
-		$this->description = "Module permettant d'ajouter des titres, sous-totaux et des sous-totaux intermédiaires dans un tableau ou une liste, tout en facilitant le déplacement fluide d'une ligne d'éléments d'un sous-total à un autre.";
+		$this->description = 'Module104777Desc';
+		$this->descriptionlong = 'Module104777DescLong';
 		// Possible values for version are: 'development', 'experimental' or version
-		$this->version = '3.29.0';
-
-
-		// Url to the file with your last numberversion of this module
-		require_once __DIR__ . '/../../class/techatm.class.php';
-		$this->url_last_version = \subtotal\TechATM::getLastModuleVersionUrl($this);
+		$this->version = '3.29.1';
 
 		// Key used in llx_const table to save module status enabled/disabled
 		// (where MYMODULE is value of property name of module in uppercase)
@@ -121,7 +125,7 @@ class modSubtotal extends DolibarrModules
 			,'expeditioncard'
 			,'deliverycard'
 			,'paiementcard'
-			,'referencelettersinstacecard'
+			,'referencelettersinstancecard'
 			,'shippableorderlist'
 			,'propallist'
 			,'orderlist'
@@ -143,7 +147,7 @@ class modSubtotal extends DolibarrModules
 
 		// Config pages. Put here list of php pages
 		// stored into titre/admin directory, used to setup module.
-		$this->config_page_url = array("subtotal_setup.php@subtotal");
+		$this->config_page_url = array('setup.php@subtotal');
 
 		// Dependencies
 		// List of modules id that must be enabled if this module is enabled
@@ -166,14 +170,16 @@ class modSubtotal extends DolibarrModules
 				'SUBTOTAL_STYLE_TITRES_SI_LIGNES_CACHEES',
 				'chaine',
 				'I',
-				'Définit le style (B : gras, I : Italique, U : Souligné) des sous titres lorsque le détail des lignes et des ensembles est caché',
-				1
+				'SUBTOTAL_STYLE_TITRES_SI_LIGNES_CACHEES',
+				1,
+				'current',
+				0
 			)
-		,1=>array('SUBTOTAL_ALLOW_ADD_BLOCK', 'chaine', '1', 'Permet l\'ajout de titres et sous-totaux')
-		,2=>array('SUBTOTAL_ALLOW_EDIT_BLOCK', 'chaine', '1', 'Permet de modifier titres et sous-totaux')
-		,3=>array('SUBTOTAL_ALLOW_REMOVE_BLOCK', 'chaine', '1', 'Permet de supprimer les titres et sous-totaux')
-		,4=>array('SUBTOTAL_TITLE_STYLE', 'chaine', 'BU')
-		,5=>array('SUBTOTAL_SUBTOTAL_STYLE', 'chaine', 'B')
+		,1=>array('SUBTOTAL_ALLOW_ADD_BLOCK', 'chaine', '1', 'SUBTOTAL_ALLOW_ADD_BLOCK', 0, 'current', 0)
+		,2=>array('SUBTOTAL_ALLOW_EDIT_BLOCK', 'chaine', '1', 'SUBTOTAL_ALLOW_EDIT_BLOCK', 0, 'current', 0)
+		,3=>array('SUBTOTAL_ALLOW_REMOVE_BLOCK', 'chaine', '1', 'SUBTOTAL_ALLOW_REMOVE_BLOCK', 0, 'current', 0)
+		,4=>array('SUBTOTAL_TITLE_STYLE', 'chaine', 'BU', 'SUBTOTAL_TITLE_STYLE', 0, 'current', 0)
+		,5=>array('SUBTOTAL_SUBTOTAL_STYLE', 'chaine', 'B', 'SUBTOTAL_SUBTOTAL_STYLE', 0, 'current', 0)
 			//	1=>array(
 			//		'MYMODULE_MYNEWCONST2',
 			//		'chaine',
@@ -214,20 +220,12 @@ class modSubtotal extends DolibarrModules
 		// 'categories_x'		to add a tab in category view
 		// (replace 'x' by type of category (0=product, 1=supplier, 2=customer, 3=member)
 
-		//Compatibility V16
-		$dictionnariesTablePrefix = '';
-		if (intval(DOL_VERSION)< 16) $dictionnariesTablePrefix =  MAIN_DB_PREFIX;
-
 		// Dictionnaries
-		if (!isModEnabled('subtotal')) {
-			$conf->subtotal=new stdClass();
-			$conf->subtotal->enabled = 0;
-		}
 		$this->dictionaries = array(
 			'langs'=>'subtotal@subtotal',
-			'tabname'=>array($dictionnariesTablePrefix.'c_subtotal_free_text'),		// List of tables we want to see into dictonnary editor
+			'tabname'=>array('c_subtotal_free_text'),		// List of tables we want to see into dictonnary editor
 			'tablib'=>array($langs->trans('subtotalFreeLineDictionary')),													// Label of tables
-			'tabsql'=>array('SELECT f.rowid as rowid, f.label, f.content, f.entity, f.active FROM '.MAIN_DB_PREFIX.'c_subtotal_free_text as f WHERE f.entity='.$conf->entity),	// Request to select fields
+			'tabsql'=>array('SELECT f.rowid as rowid, f.label, f.content, f.entity, f.active FROM '.MAIN_DB_PREFIX.'c_subtotal_free_text as f WHERE f.entity='.((int) $conf->entity)),	// Request to select fields
 			'tabsqlsort'=>array('label ASC'),																					// Sort order
 			'tabfield'=>array('label,content'),							// List of fields (result of select to show dictionary)
 			'tabfieldvalue'=>array('label,content'),						// List of fields (list of fields to edit a record)
@@ -266,7 +264,7 @@ class modSubtotal extends DolibarrModules
 		//$this->rights[$r][5] = 'level2';
 		//$r++;
 		// Main menu entries
-		$this->menus = array(); // List of menus to add
+		$this->menu = array(); // List of menus to add
 
 	}
 
@@ -291,21 +289,27 @@ class modSubtotal extends DolibarrModules
 		$sql = array();
 
 		$result = $this->loadTables();
+		if ($result < 0) {
+			return 0;
+		}
 		dol_include_once('/core/class/extrafields.class.php');
 
 		$extra = new ExtraFields($db); // propaldet, commandedet, facturedet
 		$TElementType = array('propaldet', 'commandedet', 'facturedet', 'supplier_proposaldet', 'commande_fournisseurdet', 'facture_fourn_det');
 		foreach($TElementType as $element_type) {
-			$extra->addExtraField('show_total_ht', 'Afficher le Total HT sur le sous-total', 'int', 0, 10, $element_type, 0, 0, '', unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}'), 0, '', 0, 1);
-			$extra->addExtraField('show_reduc', 'Afficher la réduction sur le sous-total', 'int', 0, 10, $element_type, 0, 0, '', unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}'), 0, '', 0, 1);
-			$extra->addExtraField('subtotal_show_qty', 'Afficher la Quantité du Sous-Total', 'int', 0, 10, $element_type, 0, 0, '', unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}'), 0, '', 0, 1);
+			if ($extra->addExtraField('show_total_ht', 'SubtotalShowTotalHt', 'int', 0, 10, $element_type, 0, 0, '', unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}'), 0, '', 0, 1) < 0
+				|| $extra->addExtraField('show_reduc', 'SubtotalShowDiscount', 'int', 0, 10, $element_type, 0, 0, '', unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}'), 0, '', 0, 1) < 0
+				|| $extra->addExtraField('subtotal_show_qty', 'SubtotalShowQuantity', 'int', 0, 10, $element_type, 0, 0, '', unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}'), 0, '', 0, 1) < 0
+				|| $extra->addExtraField('subtotal_nc', 'SubtotalNotIncluded', 'varchar', 0, 255, $element_type, 0, 0, '', unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}'), 0, '', 0, 1) < 0) {
+				return 0;
+			}
 		}
 
-		$extra->addExtraField('hideblock', 'Cacher les lignes contenues dans ce titre', 'int', 4, 2, 'propaldet', 0, 0, '', unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}'), 0, '', 0, 1);
-		$extra->addExtraField('hideblock', 'Cacher les lignes contenues dans ce titre', 'int', 4, 2, 'commandedet', 0, 0, '', unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}'), 0, '', 0, 1);
-		$extra->addExtraField('hideblock', 'Cacher les lignes contenues dans ce titre', 'int', 4, 2, 'commande_fournisseurdet', 0, 0, '', unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}'), 0, '', 0, 1);
-		$extra->addExtraField('hideblock', 'Cacher les lignes contenues dans ce titre', 'int', 4, 2, 'facturedet', 0, 0, '', unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}'), 0, '', 0, 1);
-		$extra->addExtraField('hideblock', 'Cacher les lignes contenues dans ce titre', 'int', 4, 2, 'facture_fourn_det', 0, 0, '', unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}'), 0, '', 0, 1);
+		foreach ($TElementType as $element_type) {
+			if ($extra->addExtraField('hideblock', 'SubtotalHideBlock', 'int', 4, 2, $element_type, 0, 0, '', unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}'), 0, '', 0, 1) < 0) {
+				return 0;
+			}
+		}
 
 		return $this->_init($sql, $options);
 	}

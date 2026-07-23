@@ -6,14 +6,24 @@
 
 
 dol_include_once('/subtotal/class/subtotal.class.php');
+dol_include_once('/subtotal/class/subtotalaccess.class.php');
 require_once DOL_DOCUMENT_ROOT . '/core/lib/functions2.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/functions.lib.php';
 include_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
-require_once __DIR__ . '/../backport/v19/core/class/commonhookactions.class.php';
 
-
-class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
+class ActionsSubtotal
 {
+	/** @var DoliDB */
+	public $db;
+
+	/** @var string */
+	public $resprints = '';
+
+	/** @var array<string, mixed> */
+	public $results = array();
+
+	/** @var bool */
+	public $allow_move_block_lines = true;
 
 	/**
 	 * @var string $error
@@ -180,24 +190,9 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 
 		if(in_array('ordercard',$contexts) || in_array('ordersuppliercard',$contexts) || in_array('propalcard',$contexts) || in_array('supplier_proposalcard',$contexts) || in_array('invoicecard',$contexts) || in_array('invoicesuppliercard',$contexts) || in_array('invoicereccard',$contexts) || in_array('expeditioncard',$contexts)) {
 
-			$createRight = $user->hasRight($object->element, 'creer');
-			if($object->element == 'facturerec' )
-			{
-				$object->statut = 0; // hack for facture rec
-				$createRight = $user->hasRight('facture', 'creer');
-			} elseif($object->element == 'order_supplier' )
-			{
-			    $createRight = $user->hasRight('fournisseur', 'commande', 'creer');
-			} elseif($object->element == 'invoice_supplier' )
-			{
-			    $createRight = $user->hasRight('fournisseur', 'facture', 'creer');
-			}
-			elseif($object->element == 'shipping')
-			{
-				$createRight = true; // No rights management for shipments
-			}
+			$createRight = SubtotalAccess::canWrite($user, $object);
 
-			if ($object->statut == 0  && $createRight) {
+			if (SubtotalAccess::isEditable($object) && $createRight) {
 
 
 				if($object->element=='facture')$idvar = 'facid';
@@ -305,13 +300,14 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 		);
 
 
-		$jsData['buttons'] = dolGetButtonAction('', $langs->trans('SubtotalsAndTitlesActionBtnLabel'), 'default', [
+		if (!empty($jsData['conf']['groupBtn']) && function_exists('dolGetButtonAction')) {
+			$jsData['buttons'] = dolGetButtonAction('', $langs->trans('SubtotalsAndTitlesActionBtnLabel'), 'default', [
 				['attr' => [ 'rel' => 'add_title_line'], 'id' => 'add_title_line', 'urlraw' =>'#', 'label' => $langs->trans('AddTitle'), 'perm' => 1],
 				['attr' => [ 'rel' => 'add_total_line'], 'id' => 'add_total_line', 'urlraw' =>'#', 'label' => $langs->trans('AddSubTotal'), 'perm' => 1],
 				['attr' => [ 'rel' => 'add_free_text'], 'id' => 'add_free_text', 'urlraw' =>'#', 'label' => $langs->trans('AddFreeText'), 'perm' => 1],
 			], 'subtotal-actions-buttons-dropdown');
-
-		if(empty($jsData['conf']['groupBtn'])) {
+		} else {
+			$jsData['conf']['groupBtn'] = 0;
 			$jsData['buttons'] = '<div class="inline-block divButAction"><a id="add_title_line" rel="add_title_line" href="javascript:;" class="butAction">'.$langs->trans('AddTitle').'</a></div>';
 			$jsData['buttons'].= '<div class="inline-block divButAction"><a id="add_total_line" rel="add_total_line" href="javascript:;" class="butAction">'.$langs->trans('AddSubTotal').'</a></div>';
 			$jsData['buttons'].= '<div class="inline-block divButAction"><a id="add_free_text" rel="add_free_text" href="javascript:;" class="butAction">'.$langs->trans('AddFreeText').'</a></div>';
@@ -710,6 +706,11 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 		require_once DOL_DOCUMENT_ROOT . '/core/class/extrafields.class.php';
 
 		$showBlockExtrafields = GETPOST('showBlockExtrafields', 'none');
+		$subtotalMutationActions = array('updateligne', 'updateline', 'confirm_delete_all_lines', 'duplicate');
+		if (in_array($action, $subtotalMutationActions, true)
+			&& (!SubtotalAccess::canWrite($user, $object) || !SubtotalAccess::isEditable($object))) {
+			accessforbidden($langs->trans('NotEnoughPermissions'));
+		}
 
 		if(isset($object->element) && $object->element=='facture') $idvar = 'facid';
 		else $idvar = 'id';
@@ -798,12 +799,12 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 				$_SESSION[$sessname][$object->id] = $hideInnerLines;
 
 				$hidedetails= GETPOST('hidedetails', 'int');
-				if (!array_key_exists($sessname, $_SESSION) || empty($_SESSION[$sessname]) || !is_array($_SESSION[$sessname2]) || !isset($_SESSION[$sessname2][$object->id]) || !is_array($_SESSION[$sessname2][$object->id]))
+				if (!isset($_SESSION[$sessname2]) || !is_array($_SESSION[$sessname2]) || !array_key_exists($object->id, $_SESSION[$sessname2]))
 					$_SESSION[$sessname2] = array($object->id => 0); // prevent old system
 				$_SESSION[$sessname2][$object->id] = $hidedetails;
 
 				$hideprices= GETPOST('hideprices', 'int');
-				if (!array_key_exists($sessname, $_SESSION) || empty($_SESSION[$sessname]) || !is_array($_SESSION[$sessname3]) || !isset($_SESSION[$sessname3][$object->id]) || !is_array($_SESSION[$sessname3][$object->id]))
+				if (!isset($_SESSION[$sessname3]) || !is_array($_SESSION[$sessname3]) || !array_key_exists($object->id, $_SESSION[$sessname3]))
 					$_SESSION[$sessname3] = array($object->id => 0); // prevent old system
 				$_SESSION[$sessname3][$object->id] = $hideprices;
 
@@ -826,6 +827,7 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 		else if($action === 'confirm_delete_all_lines' && GETPOST('confirm', 'none')=='yes') {
 			$error = 0;
 			$Tab = TSubtotal::getLinesFromTitleId($object, GETPOST('lineid', 'int'), true);
+			$db->begin();
 			foreach($Tab as $line) {
                 $result = 0;
 
@@ -872,7 +874,10 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 				 */
 				else if($object->element=='shipping') $result = $object->deleteline($user, $idLine);
 
-                if ($result < 0) $error++;
+				if ($result < 0) {
+					$error++;
+					break;
+				}
 			}
 
             if ($error > 0) {
@@ -954,6 +959,7 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
                             $sessname3 = 'subtotal_hideprices_unknown';
                         }
 
+                        global $hideInnerLines; // used by Subtotal document generation hooks
                         global $hidedetails; // same name as in global card (proposal, order, invoice, ...)
                         global $hideprices; // used as global value in this module
 
@@ -962,8 +968,6 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
                         } else {
                             $hideInnerLines = isset($_SESSION[$sessname][$object->id]) ? $_SESSION[$sessname][$object->id] : 0;
                         }
-                        $_POST['hideInnerLines'] = $hideInnerLines;
-
                         if (GETPOSTISSET('hidedetails')) {
                             $hidedetails = GETPOST('hidedetails', 'int');
                         } else {
@@ -1350,7 +1354,7 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 
 			if($pdfModelUseColSystem){
 				$staticPdfModel->printStdColumnContent($pdf, $posy, 'totalexcltax', $total_to_print);
-				if(!empty($conf->global->PDF_PROPAL_SHOW_PRICE_INCL_TAX))
+				if (getDolGlobalString('PDF_PROPAL_SHOW_PRICE_INCL_TAX'))
 				{
 					$staticPdfModel->printStdColumnContent($pdf, $posy, 'totalincltax', price($line->total_ttc,0,'',1,0,getDolGlobalInt('MAIN_MAX_DECIMALS_TOT')));
 				}
@@ -1516,7 +1520,12 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 		{
 			dol_include_once('/commande/class/commande.class.php');
 			$line = new OrderLine($object->db);
-			$line->fetch($object->lines[$i]->fk_elementdet ?? $object->lines[$i]->fk_elementdet);
+			$originLineId = !empty($object->lines[$i]->fk_elementdet)
+				? (int) $object->lines[$i]->fk_elementdet
+				: (!empty($object->lines[$i]->origin_line_id) ? (int) $object->lines[$i]->origin_line_id : 0);
+			if ($originLineId <= 0 || $line->fetch($originLineId) <= 0) {
+				return false;
+			}
 		}
 
 
@@ -2418,15 +2427,13 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 				global $hideprices;
 				if(!empty($hideprices)) {
 					foreach($object->lines as &$line) {
-						if($line->fk_product_type!=9) $line->fk_parent_line = -1;
+						if($line->product_type != 9) $line->fk_parent_line = -1;
 					}
 				}
 
 				$line = &$object->lines[$i];
 
-				// Unset on Dolibarr < 20.0
-				if($object->element == 'delivery' && ! empty($object->commande->expeditions[$line->fk_elementdet])) unset($object->commande->expeditions[$line->fk_elementdet]);
-				// Unset on Dolibarr >= 20.0
+				// Prevent duplicate rendering of the originating shipment line.
 				if($object->element == 'delivery' && ! empty($object->commande->expeditions[$line->fk_elementdet])) unset($object->commande->expeditions[$line->fk_elementdet]);
 
 				$margin = $pdf->getMargins();
@@ -2633,12 +2640,88 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 	}
 
 	/**
-	 * @param $parameters   array
-	 * @param $object       CommonObject
-	 * @param $action       string
-	 * @param $hookmanager  HookManager
-	 * @return int
+	 * Check whether the current object is a situation invoice.
+	 *
+	 * @param CommonObject $object Parent object.
+	 * @return bool
 	 */
+	private function isSituationInvoice($object)
+	{
+		return is_object($object)
+			&& isset($object->element, $object->type)
+			&& $object->element === 'facture'
+			&& defined('Facture::TYPE_SITUATION')
+			&& (int) $object->type === (int) Facture::TYPE_SITUATION;
+	}
+
+	/**
+	 * Return the native progress ratio represented by the situation line.
+	 *
+	 * Dolibarr stores a cumulative percentage in mode 1 and the current
+	 * period percentage in mode 2. The line total uses the same percentage,
+	 * so its margin must apply that exact ratio to the line cost.
+	 *
+	 * @param CommonObjectLine $line Invoice line.
+	 * @return float Ratio from 0 to 1.
+	 */
+	private function getSituationLineProgressRatio($line)
+	{
+		$currentProgress = isset($line->situation_percent) ? (float) $line->situation_percent : 0.0;
+		return min(1.0, max(0.0, $currentProgress / 100));
+	}
+
+	/**
+	 * Calculate a subtotal margin from the contribution of each product line.
+	 *
+	 * On situation invoices, both revenue and cost are prorated with the
+	 * progress represented by each individual line in the current situation.
+	 *
+	 * @param CommonObject     $object Parent document.
+	 * @param CommonObjectLine $subtotalLine Subtotal line.
+	 * @return float
+	 */
+	private function getSubtotalMargin($object, $subtotalLine)
+	{
+		$productCostCache = array();
+		$margin = 0.0;
+		$parentTitleLine = TSubtotal::getParentTitleOfLine($object, $subtotalLine->rang);
+		if (!is_object($parentTitleLine)) {
+			return 0.0;
+		}
+
+		$productLines = TSubtotal::getLinesFromTitleId($object, $parentTitleLine->id);
+		foreach ($productLines as $productLine) {
+			if (TSubtotal::isModSubtotalLine($productLine)) {
+				continue;
+			}
+
+			$unitCost = null;
+			if (isset($productLine->pa_ht) && (float) $productLine->pa_ht > 0) {
+				$unitCost = (float) $productLine->pa_ht;
+			} elseif (!empty($productLine->fk_product)) {
+				$productId = (int) $productLine->fk_product;
+				if (!array_key_exists($productId, $productCostCache)) {
+					dol_include_once('/product/class/product.class.php');
+					$product = new Product($this->db);
+					$productCostCache[$productId] = $product->fetch($productId) > 0 ? (float) $product->cost_price : 0.0;
+				}
+				$unitCost = $productCostCache[$productId];
+			}
+			if ($unitCost === null) {
+				$unitCost = 0.0;
+			}
+
+			$quantity = isset($productLine->qty) ? (float) $productLine->qty : 0.0;
+			$cost = $unitCost * $quantity;
+			if ($this->isSituationInvoice($object)) {
+				$cost *= $this->getSituationLineProgressRatio($productLine);
+			}
+			$lineTotal = isset($productLine->total_ht) ? (float) $productLine->total_ht : 0.0;
+			$margin += $lineTotal - $cost;
+		}
+		return (float) price2num($margin, 'MT');
+	}
+
 	function printObjectLine ($parameters, &$object, &$action, $hookmanager)
 	{
 		global $conf, $langs, $user, $db, $bc, $usercandelete, $toselect;
@@ -2656,19 +2739,9 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 
         $newToken = function_exists('newToken') ? newToken() : $_SESSION['newtoken'];
 
-		$createRight = $user->hasRight($object->element, 'creer');
 		if($object->element == 'facturerec' )
 		{
 			$object->statut = 0; // hack for facture rec
-			$createRight = $user->hasRight('facture', 'creer');
-		}
-		elseif($object->element == 'order_supplier' )
-		{
-		    $createRight = $user->hasRight('fournisseur', 'commande', 'creer');
-		}
-		elseif($object->element == 'invoice_supplier' )
-		{
-		    $createRight = $user->hasRight('fournisseur', 'facture', 'creer');
 		}
 		elseif($object->element == 'commande' && in_array('ordershipmentcard', $contexts))
 		{
@@ -2678,13 +2751,18 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 		}
 		elseif($object->element == 'shipping' || $object->element == 'delivery')
 		{
-			if(empty($line->origin_line_id) && (! empty($line->fk_elementdet || ! empty($line->fk_elementdet))))
+			$originLineId = !empty($line->fk_elementdet)
+				? (int) $line->fk_elementdet
+				: (!empty($line->origin_line_id) ? (int) $line->origin_line_id : 0);
+			if(empty($line->origin_line_id) && $originLineId > 0)
 			{
-				$line->origin_line_id = $line->fk_elementdet ?? $line->fk_elementdet;
+				$line->origin_line_id = $originLineId;
 			}
 
 			$originline = new OrderLine($db);
-			$originline->fetch($line->fk_elementdet ?? $line->fk_elementdet);
+			if ($originLineId <= 0 || $originline->fetch($originLineId) <= 0) {
+				return 0;
+			}
 
 			foreach(get_object_vars($line) as $property => $value)
 			{
@@ -2696,6 +2774,7 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 
 			$line = $originline;
 		}
+		$createRight = SubtotalAccess::canWrite($user, $object) && SubtotalAccess::isEditable($object);
  		if($object->element=='facture')$idvar = 'facid';
         else $idvar='id';
 		if($line->special_code!=$this->module_number || $line->product_type!=9) {
@@ -2741,7 +2820,9 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 			if(isModEnabled('margin') && !$margins_hidden_by_module) $colspan++;
 			if(isModEnabled('margin') && getDolGlobalString('DISPLAY_MARGIN_RATES') && !$margins_hidden_by_module && $affectedByMarge > 0) $colspan++;
 			if(isModEnabled('margin') && getDolGlobalString('DISPLAY_MARK_RATES') && !$margins_hidden_by_module && $affectedByMarge > 0) $colspan++;
-			if($object->element == 'facture' && getDolGlobalString('INVOICE_USE_SITUATION') && $object->type == Facture::TYPE_SITUATION) $colspan++;
+			if ($this->isSituationInvoice($object)) {
+				$colspan += getDolGlobalInt('INVOICE_USE_SITUATION') === 2 ? 3 : 2;
+			}
 			if(getDolGlobalString('PRODUCT_USE_UNITS')) $colspan++;
 			// Compatibility module showprice
 			if(isModEnabled('showprice')) $colspan++;
@@ -2820,7 +2901,7 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 				<?php
 					if($action=='editline' && GETPOST('lineid', 'int') == $line->id && TSubtotal::isModSubtotalLine($line) ) {
 
-                        echo '<td colspan="'.$colspan.'" style="'.(TSubtotal::isFreeText($line) ? '' : 'font-weight:bold;').(($line->qty>90)?'text-align:right':'').'">';
+                        echo '<td class="subtotal-colspan-cell" colspan="'.$colspan.'" style="'.(TSubtotal::isFreeText($line) ? '' : 'font-weight:bold;').(($line->qty>90)?'text-align:right':'').'">';
 						$params=array('line'=>$line);
 						$reshook=$hookmanager->executeHooks('formEditProductOptions',$params,$object,$action);
 
@@ -2981,7 +3062,7 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
                             $titleStyleUnderline = strpos($style, 'U') === false ? '' : ' text-decoration: underline;';
 
                             $style = 'text-align:right;';
-                            echo '<td colspan="' . $colspan . '" style="' . $style . $titleStyleBold . '">';
+                            echo '<td class="subtotal-colspan-cell" colspan="' . $colspan . '" style="' . $style . $titleStyleBold . '">';
                             echo '<span class="subtotal_label" style="' . $titleStyleItalic . $titleStyleBold . $titleStyleUnderline . '">' . $langs->trans('Qty') . ' : </span>&nbsp;&nbsp;' . price($total_qty, 0, '', 0, 0);
                             echo '</td>';
                             $colspan = 2;
@@ -2999,27 +3080,9 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 
 						//Marge :
 						$style = $line->qty>90 ? 'text-align:right;font-weight:bold;' : '';
-						echo '<td nowrap="nowrap" colspan="'.$colspan.'" style="'.$style.'">';
-						echo '<span class="subtotal_label" style="'.$titleStyleItalic.$titleStyleBold.$titleStyleUnderline.'">Marge :</span>';
-
-
-                        $parentTitleLine = TSubtotal::getParentTitleOfLine($object, $line->rang);
-                        $productLines = TSubtotal::getLinesFromTitleId($object, $parentTitleLine->id);
-
-						$totalCostPrice = 0;
-                        if(!empty($productLines)){
-							foreach ($productLines as $l) {
-								$product = new Product($db);
-								$res = $product->fetch($l->fk_product);
-                                if($res) {
-                                    $totalCostPrice += $product->cost_price * $l->qty;
-								}
-						    }
-						}
-
-                        $marge = $total_line - $totalCostPrice;
-
-						echo '&nbsp;&nbsp;'.price($marge);
+						echo '<td class="subtotal-colspan-cell" nowrap="nowrap" colspan="'.$colspan.'" style="'.$style.'">';
+						echo '<span class="subtotal_label" style="'.$titleStyleItalic.$titleStyleBold.$titleStyleUnderline.'">'.$langs->trans('Margin').' :</span>';
+						echo '&nbsp;&nbsp;'.price($this->getSubtotalMargin($object, $line));
 						echo '</td>';
 					}
 
@@ -3030,7 +3093,7 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
                         $style = TSubtotal::isFreeText($line) ? '' : 'font-weight:bold;';
                         $style.= $line->qty>90 ? 'text-align:right' : '';
 
-                        echo '<td '. (!TSubtotal::isSubtotal($line) || !getDolGlobalString('DISPLAY_MARGIN_ON_SUBTOTALS') ? ' colspan="'.$colspan.'"' : '' ).' style="' .$style.'">';
+                        echo '<td class="subtotal-main-label-cell'.(!TSubtotal::isSubtotal($line) || !getDolGlobalString('DISPLAY_MARGIN_ON_SUBTOTALS') ? ' subtotal-colspan-cell' : '').'" '. (!TSubtotal::isSubtotal($line) || !getDolGlobalString('DISPLAY_MARGIN_ON_SUBTOTALS') ? ' colspan="'.$colspan.'"' : '' ).' style="' .$style.'">';
 						 if (getDolGlobalString('SUBTOTAL_USE_NEW_FORMAT'))
 						 {
 							if(TSubtotal::isTitle($line))
@@ -3202,7 +3265,7 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 				<?php
 				$Telement = array('propal','commande','facture','supplier_proposal','order_supplier','invoice_supplier');
 
-				if (!empty(getDolGlobalString('MASSACTION_CARD_ENABLE_SELECTLINES')) && $object->status == $object::STATUS_DRAFT && $usercandelete && in_array($object->element,$Telement)|| $action == 'selectlines' ) { // dolibarr 8
+				if ($createRight && !empty($usercandelete) && ((!empty(getDolGlobalString('MASSACTION_CARD_ENABLE_SELECTLINES')) && $object->status == $object::STATUS_DRAFT && in_array($object->element, $Telement)) || $action == 'selectlines')) { // dolibarr 8
 
 					if ($action !== 'editline' && GETPOST('lineid', 'int') !== $line->id) {
 						$checked = '';
@@ -3524,8 +3587,6 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 					foreach($object->lines as $shipmentLine) {
 						if((!empty($shipmentLine->fk_elementdet)) && $shipmentLine->fk_origin == 'orderline' && $shipmentLine->fk_elementdet == $line->id) {
 							$lineid = $shipmentLine->id;
-						} elseif((!empty($shipmentLine->fk_elementdet)) && $shipmentLine->fk_origin == 'orderline' && $shipmentLine->fk_elementdet == $line->id) {
-							$lineid = $shipmentLine->id;
 						}
 					}
 				}
@@ -3755,7 +3816,8 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 							,type: 'POST'
 							,data: {
 								json:1
-								,set: set
+								,action: set
+								,token: <?php echo json_encode(newToken()); ?>
 								,element: '<?php echo $object->element; ?>'
 								,elementid: <?php echo (int) $object->id; ?>
 								,lineid: lineid
@@ -4122,7 +4184,7 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 				'SubtotalOptions' => $langs->trans('SubtotalOptions'),
 				'UseHiddenConfToAutoCheck' => $langs->trans('UseHiddenConfToAutoCheck'),
 			),
-			'isModShippingEnable' => !empty($conf->expedition->enabled),
+			'isModShippingEnable' => isModEnabled('expedition'),
 			'SUBTOTAL_DEFAULT_CHECK_SHIPPING_LIST_FOR_TITLE_DESC' => getDolGlobalInt('SUBTOTAL_DEFAULT_CHECK_SHIPPING_LIST_FOR_TITLE_DESC')
 		);
 		?>
@@ -4254,6 +4316,7 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 					'interfaceUrl'=> dol_buildpath('/subtotal/script/interface.php', 1),
 					'element' => $element,
 					'element_id' => $id,
+					'csrfToken' => newToken(),
 					'img_folder_closed' => img_picto('', 'folder'),
 					'img_folder_open' => img_picto('', 'folder-open'),
 					'langs' => array(
@@ -4301,7 +4364,7 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 							 * Dolibarr token
 							 * @type {string}
 							 */
-							o.newToken = '';
+							o.newToken = o.config.csrfToken;
 
 							/**
 							 *
@@ -4516,7 +4579,7 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 									}
 
 									o.toggleChildFolderStatusDisplay(targetTitleLineId, newStatus); // devrait être dans le callback ajax success mais pour plus d'ergonomie et rapidité de feedback je le sort
-									o.callInterface('set' , 'update_hideblock_data', sendData, function(response){
+									o.callInterface('set' , 'updateHideBlockData', sendData, function(response){
 										// TODO gérer un retour en cas d'érreur
 										// o.toggleChildFolderStatusDisplay(targetTitleLineId, newStatus);
 									})
@@ -4558,7 +4621,7 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 									o.toggleChildFolderStatusDisplay($( this ).attr('data-id'), newStatus);
 								});
 
-								o.callInterface('set' , 'update_hideblock_data', sendData, function(response){
+								o.callInterface('set' , 'updateHideBlockData', sendData, function(response){
 									// $('#tablelines tr[data-issubtotal=title]').each(function( index ) {
 									// 	//TODO manage response feedback
 									// });
@@ -4596,13 +4659,8 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 								let ajaxData = {
 									'data': sendData,
 									'token': o.newToken,
+									'action': action,
 								};
-
-								if(typeAction == 'set'){
-									ajaxData.set = action;
-								}else{
-									ajaxData.get = action;
-								}
 
 								$.ajax({
 									method: 'POST',
@@ -4610,6 +4668,9 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 									dataType: 'json',
 									data: ajaxData,
 									success: function (response) {
+										if (response && response.newToken) {
+											o.newToken = response.newToken;
+										}
 
 										if (typeof callBackFunction === 'function'){
 											callBackFunction(response);
@@ -4648,6 +4709,45 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 									}
 								});
 							}
+
+							/**
+							 * Align title, subtotal and free-text rows with the native header.
+							 *
+							 * Dolibarr situation invoices and third-party modules can add
+							 * columns. The server-side count covers native versions while
+							 * this rendering-only adjustment follows the effective DOM.
+							 */
+							o.alignSubtotalRowsToHeader = function () {
+								let headerCells = $('#tablelines tr.liste_titre:first').children('th,td');
+								if (headerCells.length === 0) {
+									return;
+								}
+								let countCells = function(cells) {
+									let count = 0;
+									cells.each(function() {
+										count += parseInt($(this).attr('colspan') || '1', 10);
+									});
+									return count;
+								};
+								let headerCount = countCells(headerCells);
+								$('#tablelines tr[rel="subtotal"]').each(function() {
+									let row = $(this);
+									let rowCount = countCells(row.children('th,td'));
+									let delta = headerCount - rowCount;
+									if (delta === 0) {
+										return;
+									}
+									let target = row.children('td.subtotal-colspan-cell:first');
+									if (target.length === 0) {
+										target = row.children('td[colspan]:first');
+									}
+									if (target.length > 0) {
+										let current = parseInt(target.attr('colspan') || '1', 10);
+										target.attr('colspan', Math.max(1, current + delta));
+									}
+								});
+							};
+							o.alignSubtotalRowsToHeader();
 
 
 							/**
