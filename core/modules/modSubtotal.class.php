@@ -57,12 +57,6 @@ class modSubtotal extends DolibarrModules
 
 		$this->family = 'ATM Consulting x Les Métiers du Bâtiment';
 		$this->module_position = '500';
-		$this->familyinfo = array(
-			$this->family => array(
-				'position' => '500',
-				'label' => $this->family,
-			),
-		);
 
 		// Module label (no space allowed)
 		// used if translation string 'ModuleXXXName' not found
