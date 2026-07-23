@@ -2605,6 +2605,25 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 	}
 
 	/**
+	 * Return the number of situation columns displayed before the total excluding tax.
+	 *
+	 * Dolibarr displays the cumulative progression and the total at 100% on every
+	 * situation invoice. The current-period progression is an additional column in
+	 * non-cumulative mode.
+	 *
+	 * @param CommonObject $object Object displayed on the card
+	 * @return int
+	 */
+	protected function getSituationInvoiceColumnCount($object)
+	{
+		if (empty($object->element) || $object->element !== 'facture' || empty($object->situation_cycle_ref)) {
+			return 0;
+		}
+
+		return getDolGlobalInt('INVOICE_USE_SITUATION') === 2 ? 3 : 2;
+	}
+
+	/**
 	 * @param $parameters   array
 	 * @param $object       CommonObject
 	 * @param $action       string
@@ -2713,7 +2732,7 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 			if(isModEnabled('margin') && !$margins_hidden_by_module) $colspan++;
 			if(isModEnabled('margin') && getDolGlobalString('DISPLAY_MARGIN_RATES') && !$margins_hidden_by_module && $affectedByMarge > 0) $colspan++;
 			if(isModEnabled('margin') && getDolGlobalString('DISPLAY_MARK_RATES') && !$margins_hidden_by_module && $affectedByMarge > 0) $colspan++;
-			if($object->element == 'facture' && getDolGlobalString('INVOICE_USE_SITUATION') && $object->type == Facture::TYPE_SITUATION) $colspan++;
+			$colspan += $this->getSituationInvoiceColumnCount($object);
 			if(getDolGlobalString('PRODUCT_USE_UNITS')) $colspan++;
 			// Compatibility module showprice
 			if(isModEnabled('showprice')) $colspan++;
@@ -2958,41 +2977,24 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
                             echo '</td>';
                             $colspan = 2;
                         }
-				    if(TSubtotal::isSubtotal($line) && getDolGlobalString('DISPLAY_MARGIN_ON_SUBTOTALS')) {
-						$colspan --;
-
-				        $style = getDolGlobalString('SUBTOTAL_TITLE_STYLE', '');
-						$titleStyleItalic = strpos($style, 'I') === false ? '' : ' font-style: italic;';
-						$titleStyleBold =  strpos($style, 'B') === false ? '' : ' font-weight:bold;';
-						$titleStyleUnderline =  strpos($style, 'U') === false ? '' : ' text-decoration: underline;';
-
-
-						$total_line = $this->getTotalLineFromObject($object, $line, '');
-
-						//Marge :
-						$style = $line->qty>90 ? 'text-align:right;font-weight:bold;' : '';
-						echo '<td nowrap="nowrap" colspan="'.$colspan.'" style="'.$style.'">';
-						echo '<span class="subtotal_label" style="'.$titleStyleItalic.$titleStyleBold.$titleStyleUnderline.'">Marge :</span>';
-
-
-                        $parentTitleLine = TSubtotal::getParentTitleOfLine($object, $line->rang);
-                        $productLines = TSubtotal::getLinesFromTitleId($object, $parentTitleLine->id);
+					$displayMarginOnSubtotal = TSubtotal::isSubtotal($line) && getDolGlobalString('DISPLAY_MARGIN_ON_SUBTOTALS');
+					$subtotalMargin = 0;
+					if ($displayMarginOnSubtotal) {
+						$parentTitleLine = TSubtotal::getParentTitleOfLine($object, $line->rang);
+						$productLines = is_object($parentTitleLine) ? TSubtotal::getLinesFromTitleId($object, $parentTitleLine->id) : array();
 
 						$totalCostPrice = 0;
-                        if(!empty($productLines)){
+						if (!empty($productLines)) {
 							foreach ($productLines as $l) {
 								$product = new Product($db);
 								$res = $product->fetch($l->fk_product);
-                                if($res) {
-                                    $totalCostPrice += $product->cost_price * $l->qty;
+								if ($res > 0) {
+									$totalCostPrice += $product->cost_price * $l->qty;
 								}
-						    }
+							}
 						}
 
-                        $marge = $total_line - $totalCostPrice;
-
-						echo '&nbsp;&nbsp;'.price($marge);
-						echo '</td>';
+						$subtotalMargin = price2num($total_line - $totalCostPrice, 'MT');
 					}
 
 
@@ -3002,7 +3004,7 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
                         $style = TSubtotal::isFreeText($line) ? '' : 'font-weight:bold;';
                         $style.= $line->qty>90 ? 'text-align:right' : '';
 
-                        echo '<td '. (!TSubtotal::isSubtotal($line) || !getDolGlobalString('DISPLAY_MARGIN_ON_SUBTOTALS') ? ' colspan="'.$colspan.'"' : '' ).' style="' .$style.'">';
+                        echo '<td colspan="'.$colspan.'" style="' .$style.'">';
 						 if (getDolGlobalString('SUBTOTAL_USE_NEW_FORMAT'))
 						 {
 							if(TSubtotal::isTitle($line))
@@ -3067,6 +3069,12 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 
 
 						 if($line->qty>90) print ' : ';
+						 if ($displayMarginOnSubtotal) {
+							print '<span class="subtotal-margin nowraponall marginleftonlyshort">';
+							print '<span class="subtotal_label" style="'.$titleStyleItalic.$titleStyleBold.$titleStyleUnderline.'">'.$langs->trans('Margin').' :</span>';
+							print '&nbsp;'.price($subtotalMargin);
+							print '</span>';
+						 }
 						 if($line->info_bits > 0) echo img_picto($langs->trans('Pagebreak'), 'pagebreak@subtotal');
 					}
 			?>
