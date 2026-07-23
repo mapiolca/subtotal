@@ -40,6 +40,13 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
      */
     protected $subtotal_sum_qty_enabled = false;
 
+	/**
+	 * Subtotal amounts computed before inner lines are hidden from the PDF model.
+	 *
+	 * @var array<string, array{total_ht: float, total_tva: float, total_ttc: float, vat_by_rate: array<string, float>}>
+	 */
+	protected $pdf_subtotal_totals = array();
+
 
 	function __construct($db)
 	{
@@ -816,8 +823,6 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
                         else{
                             $line->modsubtotal_title = 1;
                         }
-
-						$line->total_ht = $this->getTotalLineFromObject($object, $line, '');
 					}
 	        	}
 	        }
@@ -1061,6 +1066,53 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 	}
 
 	/**
+	 * Return a stable key for a subtotal line during PDF generation.
+	 *
+	 * @param CommonObjectLine $line Document line
+	 * @return string
+	 */
+	private function getPdfSubtotalLineKey($line)
+	{
+		if (!empty($line->id)) {
+			return 'id:'.((int) $line->id);
+		}
+		if (!empty($line->rowid)) {
+			return 'rowid:'.((int) $line->rowid);
+		}
+
+		return 'rang:'.((int) $line->rang);
+	}
+
+	/**
+	 * Compute normalized subtotal amounts for PDF rendering.
+	 *
+	 * @param CommonObject     $object Document
+	 * @param CommonObjectLine $line   Subtotal line
+	 * @return array{total_ht: float, total_tva: float, total_ttc: float, vat_by_rate: array<string, float>}
+	 */
+	private function getPdfSubtotalTotals(&$object, &$line)
+	{
+		$TInfo = $this->getTotalLineFromObject($object, $line, '', 1);
+		if (!is_array($TInfo)) {
+			$TInfo = array($TInfo, 0.0, $TInfo, array());
+		}
+
+		$vatByRate = array();
+		if (isset($TInfo[3]) && is_array($TInfo[3])) {
+			foreach ($TInfo[3] as $vatRate => $vatAmount) {
+				$vatByRate[(string) $vatRate] = (float) $vatAmount;
+			}
+		}
+
+		return array(
+			'total_ht' => isset($TInfo[0]) ? (float) $TInfo[0] : 0.0,
+			'total_tva' => isset($TInfo[1]) ? (float) $TInfo[1] : 0.0,
+			'total_ttc' => isset($TInfo[2]) ? (float) $TInfo[2] : 0.0,
+			'vat_by_rate' => $vatByRate,
+		);
+	}
+
+	/**
 	 * @param $pdf          TCPDF               PDF object
 	 * @param $object       CommonObject        dolibarr object
 	 * @param $line         CommonObjectLine    dolibarr object line
@@ -1082,7 +1134,6 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
         $backgroundCellPosYOffset = 0;
 		empty($pdf->page_largeur) ? $pdf->page_largeur = 0 : '';
 		empty($pdf->marge_droite) ? $pdf->marge_droite = 0 : '';
-		empty($line->total) ? $line->total = 0 : '' ;
 		empty($pdf->postotalht) ? $pdf->postotalht = 0 : '' ;
 
 		$fillBackground = false;
@@ -1232,7 +1283,17 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 		}
 
 		if (!$hidePriceOnSubtotalLines) {
-			$total_to_print = price($line->total,0,'',1,0,getDolGlobalInt('MAIN_MAX_DECIMALS_TOT'));
+			$subtotalTotalHt = isset($line->total) ? (float) $line->total : (isset($line->total_ht) ? (float) $line->total_ht : 0.0);
+			$subtotalTotalTtc = isset($line->total_ttc) ? (float) $line->total_ttc : 0.0;
+			if ($hideInnerLines) {
+				$subtotalLineKey = $this->getPdfSubtotalLineKey($line);
+				if (isset($this->pdf_subtotal_totals[$subtotalLineKey])) {
+					$subtotalTotalHt = $this->pdf_subtotal_totals[$subtotalLineKey]['total_ht'];
+					$subtotalTotalTtc = $this->pdf_subtotal_totals[$subtotalLineKey]['total_ttc'];
+				}
+			}
+
+			$total_to_print = price($subtotalTotalHt,0,'',1,0,getDolGlobalInt('MAIN_MAX_DECIMALS_TOT'));
 			if (getDolGlobalString('SUBTOTAL_MANAGE_COMPRIS_NONCOMPRIS'))
 			{
 				$TTitle = TSubtotal::getAllTitleFromLine($line);
@@ -1248,27 +1309,12 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 
 			if($total_to_print !== '') {
 
-				if (GETPOST('hideInnerLines', 'int'))
+				if (!$hideInnerLines)
 				{
-					// Dans le cas des lignes cachés, le calcul est déjà fait dans la méthode beforePDFCreation et les lignes de sous-totaux sont déjà renseignés
-//					$line->TTotal_tva
-//					$line->total_ht
-//					$line->total_tva
-//					$line->total
-//					$line->total_ttc
-				}
-				else
-				{
-					//					list($total, $total_tva, $total_ttc, $TTotal_tva) = $this->getTotalLineFromObject($object, $line, '', 1);
-
-					$TInfo = $this->getTotalLineFromObject($object, $line, '', 1);
-					$TTotal_tva = $TInfo[3];
-					$total_to_print = price($TInfo[0],0,'',1,0,getDolGlobalInt('MAIN_MAX_DECIMALS_TOT'));
-
-                    $line->total_ht = $TInfo[0];
-					$line->total = $TInfo[0];
-					if (!TSubtotal::isModSubtotalLine($line)) $line->total_tva = $TInfo[1];
-					$line->total_ttc = $TInfo[2];
+					$pdfSubtotalTotals = $this->getPdfSubtotalTotals($object, $line);
+					$subtotalTotalHt = $pdfSubtotalTotals['total_ht'];
+					$subtotalTotalTtc = $pdfSubtotalTotals['total_ttc'];
+					$total_to_print = price($subtotalTotalHt,0,'',1,0,getDolGlobalInt('MAIN_MAX_DECIMALS_TOT'));
 				}
 			}
 
@@ -1279,7 +1325,7 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 				$staticPdfModel->printStdColumnContent($pdf, $posy, 'totalexcltax', $total_to_print);
 				if(!empty($conf->global->PDF_PROPAL_SHOW_PRICE_INCL_TAX))
 				{
-					$staticPdfModel->printStdColumnContent($pdf, $posy, 'totalincltax', price($line->total_ttc,0,'',1,0,getDolGlobalInt('MAIN_MAX_DECIMALS_TOT')));
+					$staticPdfModel->printStdColumnContent($pdf, $posy, 'totalincltax', price($subtotalTotalTtc,0,'',1,0,getDolGlobalInt('MAIN_MAX_DECIMALS_TOT')));
 				}
 			}
 			else{
@@ -2132,6 +2178,7 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 		if(!empty($object->context)){ $object->context = array(); }
 		$object->context['subtotalPdfModelInfo'] = new stdClass(); // see defineColumnFiel method in this class
 		$object->context['subtotalPdfModelInfo']->cols = false;
+		$this->pdf_subtotal_totals = array();
 
 
 
@@ -2174,14 +2221,14 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 		$hidedetails = GETPOST('hidedetails', 'int');
 
 		if ($hideInnerLines) { // si c une ligne de titre
-	    	$fk_parent_line=0;
 			$TLines =array();
-
-			$original_count=count($object->lines);
 		    $TTvas = array(); // tableau de tva
+			$replaceWithVat = (bool) getDolGlobalString('SUBTOTAL_REPLACE_WITH_VAT_IF_HIDE_INNERLINES');
 
-			foreach($object->lines as $k=>&$line)
+			foreach($object->lines as &$line)
 			{
+				$lineForPdf = $line;
+
                 // to keep compatibility with supplier order and old versions (rowid was replaced with id in fetch lines method)
                 if ($line->id > 0) {
                     $line->rowid = $line->id;
@@ -2189,25 +2236,14 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 
 				if($line->product_type==9 && $line->rowid>0)
 				{
-					$fk_parent_line = $line->rowid;
-
 					// Fix tk7201 - si on cache le détail, la TVA est renseigné au niveau du sous-total, l'erreur c'est s'il y a plusieurs sous-totaux pour les même lignes, ça va faire la somme
 					if(TSubtotal::isSubtotal($line))
 					{
-						/*$total = $this->getTotalLineFromObject($object, $line, '');
+						$pdfSubtotalTotals = $this->getPdfSubtotalTotals($object, $line);
+						$this->pdf_subtotal_totals[$this->getPdfSubtotalLineKey($line)] = $pdfSubtotalTotals;
+						$lineForPdf = clone $line;
 
-						$line->total_ht = $total;
-						$line->total = $total;
-						*/
-						//list($total, $total_tva, $total_ttc, $TTotal_tva) = $this->getTotalLineFromObject($object, $line, '', 1);
-
-						$TInfo = $this->getTotalLineFromObject($object, $line, '', 1);
-
-						if (TSubtotal::getNiveau($line) == 1) $line->TTotal_tva = $TInfo[3];
-						$line->total_ht = $TInfo[0];
-						$line->total_tva = $TInfo[1];
-						$line->total = $line->total_ht;
-						$line->total_ttc = $TInfo[2];
+						if (!$replaceWithVat && TSubtotal::getNiveau($line) == 1) $lineForPdf->TTotal_tva = $pdfSubtotalTotals['vat_by_rate'];
 
 //                        $TTitle = TSubtotal::getParentTitleOfLine($object, $line->rang);
 //                        $parentTitle = array_shift($TTitle);
@@ -2223,14 +2259,28 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 
 				if ($hideInnerLines)
 				{
-				    if(getDolGlobalString('SUBTOTAL_REPLACE_WITH_VAT_IF_HIDE_INNERLINES'))
+				    if($replaceWithVat)
 				    {
-				        if($line->tva_tx != '0.000' && $line->product_type!=9){
+				        if($line->product_type != 9 && (float) $line->tva_tx != 0.0){
+							$vatRate = (string) $line->tva_tx;
+							if (!isset($TTvas[$vatRate])) {
+								$TTvas[$vatRate] = array(
+									'total_ht' => 0.0,
+									'total_tva' => 0.0,
+									'total_ttc' => 0.0,
+									'multicurrency_total_ht' => 0.0,
+									'multicurrency_total_tva' => 0.0,
+									'multicurrency_total_ttc' => 0.0,
+								);
+							}
 
-    				        // on remplit le tableau de tva pour substituer les lignes cachées
-    				       if (!empty($TTvas[$line->tva_tx]['total_tva'])) $TTvas[$line->tva_tx]['total_tva'] += $line->total_tva;
-                           if (!empty($TTvas[$line->tva_tx]['total_ht'])) $TTvas[$line->tva_tx]['total_ht'] += $line->total_ht;
-                           if (!empty($TTvas[$line->tva_tx]['total_ttc'])) $TTvas[$line->tva_tx]['total_ttc'] += $line->total_ttc;
+							// Remplit le tableau de TVA pour substituer les lignes cachées.
+							$TTvas[$vatRate]['total_ht'] += (float) $line->total_ht;
+							$TTvas[$vatRate]['total_tva'] += (float) $line->total_tva;
+							$TTvas[$vatRate]['total_ttc'] += (float) $line->total_ttc;
+							$TTvas[$vatRate]['multicurrency_total_ht'] += isset($line->multicurrency_total_ht) ? (float) $line->multicurrency_total_ht : 0.0;
+							$TTvas[$vatRate]['multicurrency_total_tva'] += isset($line->multicurrency_total_tva) ? (float) $line->multicurrency_total_tva : 0.0;
+							$TTvas[$vatRate]['multicurrency_total_ttc'] += isset($line->multicurrency_total_ttc) ? (float) $line->multicurrency_total_ttc : 0.0;
     				    }
     					if($line->product_type==9 && $line->rowid>0)
     					{
@@ -2239,7 +2289,7 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
     					    $nbtva = count($TTvas);
     					    if(!empty($nbtva)){
     					        foreach ($TTvas as $tx =>$val){
-    					            $copyL = clone $line; // la variable $coyyL était nommé $l, j' l'ai renommé car probleme de référence d'instance dans le clone
+									$copyL = clone $lineForPdf; // la variable $coyyL était nommé $l, j' l'ai renommé car probleme de référence d'instance dans le clone
 									$copyL->product_type = 1;
 									$copyL->special_code = '';
 									$copyL->qty = 1;
@@ -2247,22 +2297,25 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 									$copyL->tva_tx = $tx;
 									$copyL->total_ht = $val['total_ht'];
 									$copyL->total_tva = $val['total_tva'];
-									$copyL->total = $line->total_ht;
+									$copyL->total = $val['total_ht'];
 									$copyL->total_ttc = $val['total_ttc'];
+									if (property_exists($copyL, 'multicurrency_total_ht')) $copyL->multicurrency_total_ht = $val['multicurrency_total_ht'];
+									if (property_exists($copyL, 'multicurrency_total_tva')) $copyL->multicurrency_total_tva = $val['multicurrency_total_tva'];
+									if (property_exists($copyL, 'multicurrency_total_ttc')) $copyL->multicurrency_total_ttc = $val['multicurrency_total_ttc'];
     					            $TLines[] = $copyL;
-    					            array_shift($TTvas);
     					       }
+								$TTvas = array();
     					    }
 
     					    // ajoute la ligne de sous-total
-    					    $TLines[] = $line;
+							$TLines[] = $lineForPdf;
     					}
 				    } else {
 
 				        if($line->product_type==9 && $line->rowid>0)
 				        {
 				            // ajoute la ligne de sous-total
-				            $TLines[] = $line;
+				            $TLines[] = $lineForPdf;
 				        }
 				    }
 
@@ -2273,21 +2326,11 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 					$TLines[] = $line; //Cas où je cache uniquement les prix des produits
 				}
 
-				if ($line->product_type != 9) { // jusqu'au prochain titre ou total
-					//$line->fk_parent_line = $fk_parent_line;
-
-				}
-
-				/*if($hideTotal) {
-					$line->total = 0;
-					$line->subprice= 0;
-				}*/
-
 			}
 
 			// cas incongru où il y aurait des produits en dessous du dernier sous-total
 			$nbtva = count($TTvas);
-			if(!empty($nbtva) && $hideInnerLines && getDolGlobalString('SUBTOTAL_REPLACE_WITH_VAT_IF_HIDE_INNERLINES'))
+			if(!empty($nbtva) && $hideInnerLines && $replaceWithVat)
 			{
 			    foreach ($TTvas as $tx =>$val){
 			        $l = clone $line;
@@ -2298,10 +2341,12 @@ class ActionsSubtotal extends \subtotal\RetroCompatCommonHookActions
 			        $l->tva_tx = $tx;
 			        $l->total_ht = $val['total_ht'];
 			        $l->total_tva = $val['total_tva'];
-			        $l->total = $line->total_ht;
+			        $l->total = $val['total_ht'];
 			        $l->total_ttc = $val['total_ttc'];
+			        if (property_exists($l, 'multicurrency_total_ht')) $l->multicurrency_total_ht = $val['multicurrency_total_ht'];
+			        if (property_exists($l, 'multicurrency_total_tva')) $l->multicurrency_total_tva = $val['multicurrency_total_tva'];
+			        if (property_exists($l, 'multicurrency_total_ttc')) $l->multicurrency_total_ttc = $val['multicurrency_total_ttc'];
 			        $TLines[] = $l;
-			        array_shift($TTvas);
 			    }
 			}
 
