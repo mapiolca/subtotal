@@ -1,53 +1,65 @@
 Module104777Name = Sous-Total
 Module104777Desc = Permet l'ajout de titre et de sous-totaux sur les propositions commerciales, commandes et factures
-ATMAbout = Ce module a été développé par <a href="http://www.atm-consulting.fr" target="_blank">ATM Consulting</a><br>Vous pouvez retrouver la documentation sur notre <a href="http://wiki.atm-consulting.fr/index.php/Accueil" target="_blank">wiki</a><br><br>Pour toute question technique ou retour, contactez-nous sur <a href="mailto:support@atm-consulting.fr">support@atm-consulting.fr</a><br><br>Pour toute question commerciale, contactez-nous sur <a href="mailto:contact@atm-consulting.fr">contact@atm-consulting.fr</a> ou au +33 9 77 19 50 70<br><br>Retrouvez nos autres modules sur <a href="http://www.dolistore.com/search.php?orderby=position&orderway=desc&search_query=atm&submit_search=Rechercher" target="_blank">Dolistore</a>
-title=Titre du groupement
-subtotal=Sous-total
-subtotalAddLineDescription=Description...
-subtitle=Titre du sous-groupement
+
+ATMAbout = Ce module a été développé par <a href="https://www.atm-consulting.fr" target="_blank">ATM Consulting</a><br>Vous pouvez retrouver la documentation sur notre <a href="https://wiki.atm-consulting.fr/index.php/Accueil" target="_blank">wiki</a><br><br>Pour toute question technique ou retour, contactez-nous sur <a href="mailto:support@atm-consulting.fr">support@atm-consulting.fr</a><br><br>Pour toute question commerciale, contactez-nous sur <a href="mailto:contact@atm-consulting.fr">contact@atm-consulting.fr</a> ou au +33 9 77 19 50 70<br><br>Retrouvez nos autres modules sur <a href="https://www.dolistore.com/search.php?orderby=position&orderway=desc&search_query=atm&submit_search=Rechercher" target="_blank">Dolistore</a>
+
+title = Titre du groupement
+subtotal = Sous-total
+subtotalAddLineDescription = Description...
+subtitle = Titre du sous-groupement
 AddTitle = Ajouter un titre
 SubSubTotal = Sous-sous-total
 AddSubTotal = Ajouter un sous-total
 AddSubTitle = Ajouter un sous-titre
 AddSubSubTotal = Ajouter un sous-sous-total
 HideInnerLines = Cacher le détail des ensembles
-SubTotalhidedetails=Cacher le prix et quantités des lignes des ensembles
-SubTotalhidePrice=Cacher le prix des lignes des ensembles
-YourTitleLabel=Saisissez votre titre
-YourSubtotalLabel=Saisissez votre sous-total
-YourTextLabel=Saisissez votre description
-deleteWithAllLines=Supprimer avec toutes les lignes contenues
-ConfirmDeleteAllThisLines=Confirmez-vous la suppression de %s lignes ?
-AddBreakPageBefore=Ajouter un saut de page avant.
-Level=Niveau
-SubtotalLabel=<b>Sous-total : </b>
+SubTotalhidedetails = Cacher le prix et quantités des lignes des ensembles
+SubTotalhidePrice = Cacher le prix des lignes des ensembles
+YourTitleLabel = Saisissez votre titre
+YourSubtotalLabel = Saisissez votre sous-total
+YourTextLabel = Saisissez votre description
+deleteWithAllLines = Supprimer avec toutes les lignes contenues
+ConfirmDeleteAllThisLines = Confirmez-vous la suppression de %s lignes ?
+AddBreakPageBefore = Ajouter un saut de page avant.
+SubtotalLineShowQty = Afficher la quantité du sous-total
+Level = Niveau
+SubtotalLabel = <b>Sous-total : </b>
+
+SUBTOTAL_HIDE_FOLDERS_BY_DEFAULT=Par défaut, plier les dossiers
 SUBTOTAL_USE_NEW_FORMAT=Activer l'utilisation avancée
 SUBTOTAL_USE_NUMEROTATION=Activer la numérotation automatique sur le PDF
 SUBTOTAL_ALLOW_ADD_BLOCK=Autoriser l'ajout d'un titre et sous-total
-SUBTOTAL_ALLOW_EDIT_BLOCK=Autoriser l'edition d'un titre ou sous-total
+SUBTOTAL_ALLOW_EDIT_BLOCK=Autoriser l'édition d'un titre ou sous-total
 SUBTOTAL_ALLOW_REMOVE_BLOCK=Autoriser la suppression d'un titre ou sous-total
 SUBTOTAL_ALLOW_DUPLICATE_BLOCK=Autoriser la duplication d'un bloc
+SUBTOTAL_ALLOW_DUPLICATE_LINE=Autoriser la duplication d'une ligne
 SUBTOTAL_ALLOW_ADD_LINE_UNDER_TITLE=Permettre l'ajout d'une ligne libre et/ou produit directement sous un titre
 subtotal_title_to_add_under_title=Ajouter sous
 SUBTOTAL_TEXT_FOR_TITLE_ORDETSTOINVOICE=Texte des titres lors de la facturation via onglet client -> bouton "Facturer commandes"
 SUBTOTAL_TEXT_FOR_TITLE_ORDETSTOINVOICE_info=Clés de remplacement :<br /><b>__REFORDER__</b> = Référence de la commande<br /><b>__REFCUSTOMER__</b> = Référence client de la commande
 subtotal_add_title_bloc_from_orderstoinvoice=Ajouter un bloc titre et sous-total entre chaque commande
 SUBTOTAL_ADD_LINE_UNDER_TITLE_AT_END_BLOCK=L'ajout sous un titre se fera en fin de section 
+SUBTOTAL_HIDE_OPTIONS_TITLE=Cacher les options de titre
+SUBTOTAL_HIDE_OPTIONS_BREAK_PAGE_BEFORE=Cacher l'option du saut de page avant
+SUBTOTAL_HIDE_OPTIONS_BUILD_DOC=Cache les options génération du document
 SUBTOTAL_TITLE_STYLE=Style des titres (B = gras, U = souligné, I = italique)
+SUBTOTAL_TEXT_LINE_STYLE=Style des textes libres (B = gras, U = souligné, I = italique)
+SUBTOTAL_TITLE_SIZE=Taille des titres
+SUBTOTAL_TITLE_SIZE_info=égale à 9 si non renseignée
 SUBTOTAL_SUBTOTAL_STYLE=Style des sous-totaux (B = gras, U = souligné, I = italique)
 SUBTOTAL_ONE_LINE_IF_HIDE_INNERLINES=Avoir une seule ligne de titre + total si l'option "%s" est utilisée (expérimental)
 SUBTOTAL_REPLACE_WITH_VAT_IF_HIDE_INNERLINES=Remplacer par le détail des TVA si l'option "%s" est utilisée (expérimental)
-SUBTOTAL_HIDE_PRICE_DEFAULT_CHECKED=Par defaut, cocher la case "Cacher le prix des lignes des ensembles" lors de la génération des PDF
+SUBTOTAL_HIDE_PRICE_DEFAULT_CHECKED=Par défaut, cocher la case "Cacher le prix des lignes des ensembles" lors de la génération des PDF
 Duplicate=Dupliquer
 subtotal_duplicate_success=%d lignes dupliquées
 subtotal_duplicate_lineid_not_found=Impossible de dupliquer le bloc, l'identifiant du titre est introuvable
 subtotal_duplicate_error=Échec de la duplication
 subtotal_apply_default_tva=Appliquer une TVA au bloc
-subtotal_apply_default_tva_help=Permet de définir une TVA général à toutes les lignes du bloc
+subtotal_apply_default_tva_help=Permet de définir une TVA générale à toutes les lignes du bloc
 subtotal_apply_progress=Appliquer une progression au bloc
 subtotal_success_updated_line=Lignes mises à jour : %d
 subtotal_error_updated_line=Erreur : %d lignes non mises à jour
-subtotal_nb_progress_not_updated=Attention : progression non mise à jour pour %d lignes (progression précédente inférieur au nouveau taux)
+subtotal_nb_progress_not_updated=Attention : progression non mise à jour pour %d lignes (progression précédente inférieure au nouveau taux)
 subtotal_update_nc_success=Total mis à jour
 subtotal_update_nc_error=Erreur : total non mis à jour
 subtotal_nc_title=NC
@@ -68,6 +80,8 @@ warning_subtotal_recap_object_element_unknown=Génération du récapitulatif imp
 subtotal_add_recap=Ajouter le récapitulatif
 AddFreeText = Ajouter une ligne de texte
 SUBTOTAL_AUTO_ADD_SUBTOTAL_ON_ADDING_NEW_TITLE=Ajouter un titre, ajoutera au-dessus les sous-totaux manquants
+SUBTOTAL_DEFAULT_DISPLAY_QTY_FOR_SUBTOTAL_ON_ELEMENTS=Activer l'affichage de la somme des quantités sur les lignes de sous-totaux pour les modèles de documents :
+SUBTOTAL_DEFAULT_DISPLAY_QTY_FOR_SUBTOTAL_ON_ELEMENTS_info=Activer l'affichage de la somme des quantités sur les lignes de sous-totaux pour les modèles de documents sélectionnés
 SUBTOTAL_ALLOW_EXTRAFIELDS_ON_TITLE=Autoriser l'affichage des extrafields sur les titres (les données enregistrées seront alors peuplées sur les lignes du bloc)
 subtotalFreeLineDictionary=Ligne de texte prédéfini
 subtotalLabelForUnderTitle=Ajouter dans le bloc :
@@ -79,3 +93,64 @@ AmountBeforeTaxesSubjectToVATX%=Montant HT soumis à %s (%s %%)
 MoveTitleBlock=Déplacer le bloc titre complet
 ShowTotalHTOnSubtotalBlock=Afficher le Prix Unitaire HT du sous-total
 ShowReducOnSubtotalBlock=Afficher la réduction sur la ligne de sous-total
+SUBTOTAL_NONCOMPRIS_UPDATE_PA_HT=La gestion des non-compris vide aussi le prix de revient
+SUBTOTAL_NONCOMPRIS_UPDATE_PA_HT_info=Attention, si vous rendez de nouveau la ligne comprise, il faudra de nouveau saisir le prix de revient
+addLineTitle_in_order_shippable=Ajouter les lignes Titre , total , libre aux commandes expédiables (il faudra supprimer les lignes de sous-total à la main si le besoin s'en fait sentir )
+addLineTitle_in_order_shippable_TITLE=Paramétrage de l'option gestion des lignes du module subTotal pour les commandes expédiables
+SUBTOTAL_SHIPPABLE_ORDER = Paramétrage de l'option gestion des lignes du module subTotal pour les commandes expédiables
+
+CloneLSubtotalBlock = Cloner le bloc titre/sous-total
+
+NO_TITLE_SHOW_ON_EXPED_GENERATION=Ne pas reporter les lignes de titre lors de la génération d’expédition
+Error_subtotal_delete_line=Erreur lors de la suppression d'une ligne du module sous total
+ErrorLoadingLinesFromLinkedOrder=Erreur lors du chargement des lignes de commande associées à l'expedition
+ErrorLoadingLinkedOrder=Erreur lors du chargement de la commande associées à l'expedition
+ErrorNoLinkedOrder=pas de commande associée
+
+SUBTOTAL_TITLE_BACKGROUNDCOLOR = Couleur de fond utilisée sur les PDF pour les titres
+SUBTOTAL_SUBTOTAL_BACKGROUNDCOLOR = Couleur de fond utilisée sur les PDF pour les sous-totaux
+SUBTOTAL_USE_NEW_FORMAT_HELP = En activant cette option, de nouvelles fonctionnalités et comportements apparaissent.<br/>Parmi les nouveaux comportement : <ul><li>Ajoute la notion de niveau de titre et de sous total</li></ul>
+SUBTOTAL_LIST_OF_EXTRAFIELDS_PROPALDET = Champs complémentaires disponible sur les titres dans les propositions commerciales clients
+SUBTOTAL_LIST_OF_EXTRAFIELDS_COMMANDEDET = Champs complémentaires disponible sur les titres dans les commandes clients
+SUBTOTAL_LIST_OF_EXTRAFIELDS_FACTUREDET = Champs complémentaires disponible sur les titres dans les factures clients
+CONCAT_TITLE_LABEL_IN_SUBTOTAL_LABEL = Sur les lignes de sous total des PDF, ajouter le libellé du titre auquel cette dernière est rattaché.
+
+SubtotalSetup = Paramètre module sous total
+SubTotalSetupPage = Paramètre module sous total
+EXPERIMENTAL=EXPERIMENTAL
+ManageNonCompris = Gestion des "Non compris"
+SetupForExtrafields = Paramètres liés aux champs complémentaires
+SetupForSubBlocs = Paramétrage de l'option "Cacher le prix des lignes des ensembles"
+SUBTOTAL_HIDE_DOCUMENT_TOTAL = Masquer les totaux
+SUBTOTAL_IF_HIDE_PRICES_SHOW_QTY = Afficher la quantité sur les lignes de produit
+
+
+# Spé clients à delete
+SUBTOTAL_SHOW_QTY_ON_TITLES = Afficher la quantité sur les lignes de sous-total (uniquement dans le cas d'un produit virtuel ajouté)
+SUBTOTAL_ONLY_HIDE_SUBPRODUCTS_PRICES =  Masquer uniquement les prix pour les produits se trouvant dans un ensemble
+
+SubtotalExperimentalZone = Configurations expérimentales ou dépréciées
+QuickSummary = Sommaire rapide
+SUBTOTAL_DISABLE_SUMMARY = Désactiver le menu "sommaire rapide" (apparaît dans le menu de gauche lorsque le document a des titres)
+
+Subtotal_HideAll=Cacher toutes les lignes
+Subtotal_ShowAll=Afficher toutes les lignes
+Subtotal_Hide=Cacher les lignes
+Subtotal_Show=Afficher les lignes
+
+NumberOfHiddenLines = Nombre de lignes cachées
+Subtotal_ForceHideAll = Cacher toutes les lignes du bloc ainsi que les lignes des blocs de titre de niveau inférieur
+Subtotal_ForceShowAll = Afficher toutes les lignes du bloc ainsi que les lignes des blocs de titre de niveau inférieur
+DISPLAY_MARGIN_ON_SUBTOTALS=Afficher les marges sur les lignes de sous-totaux
+HideSubtitleOnFold = Cacher les lignes de titre et sous total enfant
+KeepSubtitleDisplayOnFold = Afficher les lignes de titre et sous total enfant
+SUBTOTAL_BLOC_FOLD_MODE = Comportement à adopter lorsque l'on cache un bloc de titre
+LinkedShippings = Bons d'expéditions liés
+LinkedShipping = Bon d'expédition lié
+LinkedDeliveries = Bons de livraison liés
+LinkedDelivery = Bon de livraison lié
+SubtotalOptions = Options sous-total
+AddShippingListToTile = Ajouter à la description du bloc titre la liste des références des bons d'expédition ou de livraison liés
+UseHiddenConfToAutoCheck = Pour précocher par défaut vous pouvez activer la configuration divers
+ErrorClassXNotExists = ERREUR : la classe php %s n'est pas chargée
+SubtotalsAndTitlesActionBtnLabel = Titre & Sous total
