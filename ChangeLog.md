@@ -18,6 +18,8 @@ All notable changes to this project will be documented in this file.
 - Ajout des index du dictionnaire de textes libres, de contrôles statiques et de la configuration PHPStan du module.
 
 ## Release 3.29
+- FIX : Align title and subtotal columns on validated situation invoices and keep subtotal labels readable when margins are displayed - *23/07/2026* - 3.29.2
+- FIX : Preserve technical line totals while rendering PDF subtotals and keep VAT/multicurrency replacement amounts consistent when inner lines are hidden - *23/07/2026* - 3.29.2
 - NEW : COMPAT 22 - *02/07/2025* - 3.29.0
 
 ## Release 3.28
@@ -213,4 +215,3 @@ All notable changes to this project will be documented in this file.
 - FIX: invoice creation: title/subtotal/free text lines coming from shipments or deliveries not imported with special code (MDLL) - *17/11/2021* - 3.5.8
 - FIX : Text or title line break PDF *15/04/2021* - 3.5.7
 - NEW Ajouter les lignes 'Titre' , 'total' , 'libre' aux generation d'expedition de commandes expédiables (il faudra supprimer les lignes de sous-total à la main si le besoin s'en fait sentir ) [2021-02-03]
-
