@@ -2,7 +2,9 @@
 All notable changes to this project will be documented in this file.
 
 # [Unreleased]
+
 ## Release 3.29
+- FIX : Keep situation invoice subtotals consistent after document generation in non-cumulative mode - *23/07/2026* - 3.29.1
 - NEW : COMPAT 22 - *02/07/2025* - 3.29.0
 
 ## Release 3.28
