@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 # [Unreleased]
 
 ## Release 3.29
+- FIX : Remove obsolete dynamic descriptor properties on PHP 8.2 - *25/08/2026* - 3.29.3
 - FIX : Align title and subtotal columns on validated situation invoices and keep subtotal labels readable when margins are displayed - *23/07/2026* - 3.29.2
 - FIX : Preserve technical line totals while rendering PDF subtotals and keep VAT/multicurrency replacement amounts consistent when inner lines are hidden - *23/07/2026* - 3.29.2
 - FIX : Keep situation invoice subtotals consistent after document generation in non-cumulative mode - *23/07/2026* - 3.29.1

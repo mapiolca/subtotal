@@ -65,7 +65,7 @@ class modSubtotal extends DolibarrModules
 		// (where XXX is value of numeric property 'numero' of module)
 		$this->description = "Module permettant d'ajouter des titres, sous-totaux et des sous-totaux intermédiaires dans un tableau ou une liste, tout en facilitant le déplacement fluide d'une ligne d'éléments d'un sous-total à un autre.";
 		// Possible values for version are: 'development', 'experimental' or version
-		$this->version = '3.29.2';
+		$this->version = '3.29.3';
 
 
 		// Url to the file with your last numberversion of this module
@@ -77,7 +77,6 @@ class modSubtotal extends DolibarrModules
 		$this->const_name = 'MAIN_MODULE_' . strtoupper($this->name);
 		// Where to store the module in setup page
 		// (0=common,1=interface,2=others,3=very specific)
-		$this->special = 2;
 		// Name of image file used for this module.
 		// If file is in theme/yourtheme/img directory under name object_pictovalue.png
 		// use this->picto='pictovalue'
@@ -266,7 +265,7 @@ class modSubtotal extends DolibarrModules
 		//$this->rights[$r][5] = 'level2';
 		//$r++;
 		// Main menu entries
-		$this->menus = array(); // List of menus to add
+		$this->menu = array(); // List of menus to add
 
 	}
 
