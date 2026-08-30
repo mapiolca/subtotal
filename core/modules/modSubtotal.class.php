@@ -54,7 +54,7 @@ class modSubtotal extends DolibarrModules
 		// Family can be 'crm','financial','hr','projects','products','ecm','technic','other'
 		// It is used to group modules in module setup page
 
-		$this->family = "ATM Consulting - CRM";
+		$this->family = "ATM Consulting X Les Métiers du Bâtiment";
 
 		// Module label (no space allowed)
 		// used if translation string 'ModuleXXXName' not found
@@ -69,8 +69,8 @@ class modSubtotal extends DolibarrModules
 
 
 		// Url to the file with your last numberversion of this module
-		require_once __DIR__ . '/../../class/techatm.class.php';
-		$this->url_last_version = \subtotal\TechATM::getLastModuleVersionUrl($this);
+		//require_once __DIR__ . '/../../class/techatm.class.php';
+		//$this->url_last_version = \subtotal\TechATM::getLastModuleVersionUrl($this);
 
 		// Key used in llx_const table to save module status enabled/disabled
 		// (where MYMODULE is value of property name of module in uppercase)
