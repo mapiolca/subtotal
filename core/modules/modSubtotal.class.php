@@ -54,7 +54,7 @@ class modSubtotal extends DolibarrModules
 		// Family can be 'crm','financial','hr','projects','products','ecm','technic','other'
 		// It is used to group modules in module setup page
 
-		$this->family = "ATM Consulting X Les Métiers du Bâtiment";
+		$this->family = "ATM Consulting x Les Métiers du Bâtiment";
 
 		// Module label (no space allowed)
 		// used if translation string 'ModuleXXXName' not found
