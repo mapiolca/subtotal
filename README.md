@@ -15,6 +15,8 @@ Subtotal ajoute des titres, sous-titres, textes libres et sous-totaux aux propos
 
 Pour les factures de situation, le rendu des titres, textes libres et sous-totaux suit le nombre réel de colonnes de la table Dolibarr. La marge d’un sous-total additionne la contribution de chaque ligne au prorata de son avancement dans la situation courante.
 
+Le sélecteur de titre permet d’insérer une ligne directement après un titre ou en fin de section selon le réglage choisi. En fin de section, une section sans sous-total se termine au titre suivant de niveau égal ou supérieur. Les libellés longs restent consultables dans un sélecteur de largeur bornée.
+
 ## Compatibilité
 
 - Dolibarr 16 ou version ultérieure ;
