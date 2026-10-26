@@ -1,2 +1,3 @@
-Subtotal module maintained with Dolibarr ModuleBuilder conventions.
-
+# DO NOT DELETE THIS FILE MANUALLY
+# File to flag module built using official module template.
+# When this file is present into a module directory, you can edit it with the module builder tool.

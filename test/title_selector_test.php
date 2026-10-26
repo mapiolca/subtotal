@@ -16,6 +16,10 @@ if ($coreRoot === false || !is_file($coreRoot.'/core/lib/ajax.lib.php')) {
 	exit(1);
 }
 define('DOL_DOCUMENT_ROOT', $coreRoot);
+require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
+if (is_file(DOL_DOCUMENT_ROOT.'/core/lib/html.lib.php')) {
+	require_once DOL_DOCUMENT_ROOT.'/core/lib/html.lib.php';
+}
 $conf = (object) array(
 	'global' => (object) array('MAIN_USE_JQUERY_MULTISELECT' => 1),
 	'use_javascript_ajax' => 1,
