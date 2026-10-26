@@ -28,6 +28,8 @@
 
 ## Integration and browser checks on 2026-10-26
 
+- Module icon: native helper calls with Dolibarr `24.0` (`fb6a38d`) and the local development revision (`31174f8`) confirm that the former `modsubtotal@subtotal` value resolves differently: `object_modsubtotal.png` in 24, but the missing `modsubtotal.png` in the development core. The descriptor now uses the native `fa-list-alt` pictogram, rendered by both helpers without an image URL; About reuses the descriptor value. Configuration and translations are simulated for these helper checks, with no activation or database write.
+
 - Real browser checks on a non-production Dolibarr 25.0.0-alpha / PHP 8.3.36 instance used tree `6c2bc2e`: closed-section insertion, open-section insertion before the next peer title, immediate insertion under a title, and an ordinary product with quantity 99 all persisted in the expected order after reload.
 - Settings, Compatibility and About displayed successfully. The descriptor reported 4.0.0. Activation, disable and reactivation completed without a visible error; temporary option changes and the initial disabled state were restored.
 - With a long title and 14 displayed columns, the selector remained 200 px wide and the folding toolbar stayed unique with colspan 14. At a 1920 px viewport, both the available width and document width were 1905 px. At 1280 px, the document remained 1709 px wide for 1265 px available, including with the title selector disabled: the remaining narrow-window layout constraint is not fixed by the title-selector correction.

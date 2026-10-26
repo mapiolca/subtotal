@@ -32,7 +32,7 @@ llxHeader('', $title);
 
 print load_fiche_titre($title, $linkback, 'info');
 $head = subtotalAdminPrepareHead();
-print dol_get_fiche_head($head, 'about', $title, -1, 'modsubtotal@subtotal');
+print dol_get_fiche_head($head, 'about', $title, -1, $moduleDescriptor->picto);
 
 print '<div class="underbanner opacitymedium">'.$langs->trans('SubtotalAboutPage').'</div>';
 print '<br>';

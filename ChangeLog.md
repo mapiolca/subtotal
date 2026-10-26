@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Alignement de l’option « Ajouter le récapitulatif » sur les autres options de génération documentaire.
 - Correction de la marge des sous-totaux des factures de situation : somme des marges de lignes avec coûts et montants proratisés selon l’avancement propre à chaque ligne.
 - Nouvelle administration native avec une seule roue dentée, onglets Réglages, Compatibilité et À propos ; page À propos alignée sur le rendu Timesheetweek.
+- Pictogramme natif dans la liste des modules, sans image manquante sous Dolibarr 25 ; déclaration du descripteur réutilisée dans l’onglet À propos.
 - Lien de l’éditeur renseigné avec le site `https://lesmetiersdubatiment.fr`.
 - Famille renommée `ATM Consulting x Les Métiers du Bâtiment` et version alignée sur `4.0.0`.
 - Conservation de l’identifiant historique `104777`, utilisé par les lignes comme `special_code`.
