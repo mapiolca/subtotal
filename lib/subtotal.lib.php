@@ -57,21 +57,25 @@ function getHtmlSelectTitle(&$object, $showLabel=false)
 	global $langs;
 
 	require_once DOL_DOCUMENT_ROOT . '/core/lib/functions.lib.php';
+	require_once DOL_DOCUMENT_ROOT . '/core/lib/ajax.lib.php';
 	dol_include_once('/subtotal/class/subtotal.class.php');
 	$TTitle = TSubtotal::getAllTitleFromDocument($object);
 	$html = '';
-	if ($showLabel) $html.= '<label for="under_title">'.$langs->trans('subtotalLabelForUnderTitle').'</label>';
-	$html.= '<select onChange="$(\'select[name=under_title]\').val(this.value);" name="under_title" class="under_title minwidth200"><option value="-1"></option>';
+	$htmlid = $showLabel ? 'subtotal_under_title_dialog' : 'subtotal_under_title';
+	if ($showLabel) $html.= '<label for="'.$htmlid.'">'.$langs->trans('subtotalLabelForUnderTitle').'</label>';
+	$html.= '<select id="'.$htmlid.'" name="under_title" class="under_title minwidth100 maxwidth200" style="width:200px"><option value="-1"></option>';
 
 	$nbsp = '&nbsp;';
 	foreach ($TTitle as &$line)
 	{
 		$str = '';
 		if($line->qty > 1) $str = str_repeat($nbsp, (floatval($line->qty) - 1) * 3);
-		$html .= '<option value="'.$line->rang.'">'.$str.(!empty($line->label) ? $line->label : dol_trunc($line->desc, 30)).'</option>';
+		$titleLabel = !empty($line->label) ? $line->label : dol_trunc($line->desc, 30);
+		$html .= '<option value="'.((int) $line->rang).'">'.$str.dol_escape_htmltag(dol_string_nohtmltag($titleLabel)).'</option>';
 	}
 
 	$html .= '</select>';
+	$html .= ajax_combobox($htmlid, array(), 0, 0, '200px');
 	return $html;
 }
 

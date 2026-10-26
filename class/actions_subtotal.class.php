@@ -552,7 +552,9 @@ class ActionsSubtotal
 					add_button.closest('tr').prev('tr.liste_titre').children('td:last').addClass('center').text("<?php echo $langs->trans('subtotal_title_to_add_under_title'); ?>");
 					var select_title = $(<?php echo json_encode(getHtmlSelectTitle($object)); ?>);
 
-					add_button.before(select_title);
+					if (add_button.closest('td').find('#subtotal_under_title').length === 0) {
+						add_button.before($('<div class="marginbottomonly"></div>').append(select_title));
+					}
 				}
 			});
 		</script>
@@ -4640,9 +4642,14 @@ class ActionsSubtotal
 
 
 							//Fonction qui permet d'ajouter l'option "Cacher les lignes" ou "Afficher les lignes"
+							let subtotalColumnCount = 0;
+							$('#tablelines tr.liste_titre:first').children('th,td').each(function() {
+								subtotalColumnCount += this.colSpan || 1;
+							});
+							$('#tablelines > tbody:first > tr.subtotal-fold-actions').remove();
 							$('#tablelines>tbody:first').prepend(
-								'<tr>' +
-								'	<td colspan="100%" style="  text-align:right ">' +
+								'<tr class="subtotal-fold-actions">' +
+								'	<td colspan="' + Math.max(1, subtotalColumnCount) + '" class="right">' +
 								'		<span id="hide_all"  class="toggle-all-folder-status" data-folder-status="closed" >'+o.config.img_folder_open+'&nbsp;'+o.config.langs.Subtotal_HideAll+'</span>' +
 								'		&nbsp;' +
 								'		<span id="show_all" class="toggle-all-folder-status" data-folder-status="open"  >'+o.config.img_folder_closed + '&nbsp;'+o.config.langs.Subtotal_ShowAll+'</span>' +
@@ -4652,7 +4659,7 @@ class ActionsSubtotal
 
 
 							// Lors du clic sur un dossier, on cache ou faire apparaitre les lignes contenues dans le bloc concerné
-							$(document).on("click",".toggle-all-folder-status",function(event) {
+							$(document).off('click.subtotalFolders', '.toggle-all-folder-status').on('click.subtotalFolders', '.toggle-all-folder-status', function(event) {
 								event.preventDefault();
 								newStatus = $( this ).attr('data-folder-status');
 								$( this ).fadeOut();

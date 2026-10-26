@@ -1,11 +1,14 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-# Release 4.0.0 - 23/07/2026
+# 4.0.0 — en préparation
 
 - Sécurisation des actions Ajax : POST, jeton CSRF Dolibarr, liste blanche d’actions, droits natifs, document parent et entité contrôlés.
 - Sécurisation de l’API REST : types autorisés, droits de lecture, contrôle Multicompany et suppression des requêtes SQL construites depuis l’entrée.
 - Correction du rendu des titres, textes libres et sous-totaux sur les factures de situation selon le nombre réel de colonnes affichées.
+- Largeur du sélecteur de titre bornée avec le Select2 natif, sans élargissement du tableau par les libellés longs ; barre de repli alignée sur le nombre réel de colonnes.
+- Insertion en fin de section fonctionnelle même sans sous-total de fermeture, avec prise en compte des niveaux imbriqués et remontée des erreurs de classement.
+- Reprise complète de la correction PHP 8.2 du descripteur : propriété native `menu` et suppression de la propriété obsolète `special`.
 - Alignement de l’option « Ajouter le récapitulatif » sur les autres options de génération documentaire.
 - Correction de la marge des sous-totaux des factures de situation : somme des marges de lignes avec coûts et montants proratisés selon l’avancement propre à chaque ligne.
 - Nouvelle administration native avec une seule roue dentée, onglets Réglages, Compatibilité et À propos ; page À propos alignée sur le rendu Timesheetweek.
