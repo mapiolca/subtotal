@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Insertion en fin de section fonctionnelle même sans sous-total de fermeture, avec prise en compte des niveaux imbriqués et remontée des erreurs de classement.
 - Reprise complète de la correction PHP 8.2 du descripteur : propriété native `menu` et suppression de la propriété obsolète `special`.
 - Alignement de l’option « Ajouter le récapitulatif » sur les autres options de génération documentaire.
+- Conservation du choix « Masquer les lignes internes » lors des régénérations automatiques des PDF, sans réutiliser le choix d’un autre document ; un choix explicite à zéro reste prioritaire.
 - Correction de la marge des sous-totaux des factures de situation : somme des marges de lignes avec coûts et montants proratisés selon l’avancement propre à chaque ligne.
 - Nouvelle administration native avec une seule roue dentée, onglets Réglages, Compatibilité et À propos ; page À propos alignée sur le rendu Timesheetweek.
 - Conservation du pictogramme d’origine dans la liste des modules, avec une copie renommée pour Dolibarr 25 ; déclaration du descripteur réutilisée dans l’onglet À propos.

@@ -57,6 +57,29 @@ class ActionsSubtotal
 	 */
 	protected $pdf_subtotal_totals = array();
 
+	/**
+	 * Manual or restored PDF choices, isolated by document type and ID.
+	 *
+	 * @var array<string, int>
+	 */
+	protected $pdf_hide_inner_lines = array();
+
+	/**
+	 * Resolve the request choice before the preference restored by the card hook.
+	 *
+	 * @param CommonObject $object Document being generated
+	 * @return int
+	 */
+	protected function getPdfHideInnerLines($object)
+	{
+		if (GETPOSTISSET('hideInnerLines')) {
+			return (int) GETPOST('hideInnerLines', 'int');
+		}
+
+		$key = $object->element.':'.((int) $object->id);
+		return isset($this->pdf_hide_inner_lines[$key]) ? $this->pdf_hide_inner_lines[$key] : 0;
+	}
+
 
 	function __construct($db)
 	{
@@ -806,6 +829,7 @@ class ActionsSubtotal
 				if (!array_key_exists($sessname, $_SESSION) || empty($_SESSION[$sessname]) || !is_array($_SESSION[$sessname]) || !isset($_SESSION[$sessname][$object->id]) || !is_array($_SESSION[$sessname][$object->id]))
                     $_SESSION[$sessname] = array($object->id => 0); // prevent old system
 				$_SESSION[$sessname][$object->id] = $hideInnerLines;
+				$this->pdf_hide_inner_lines[$object->element.':'.((int) $object->id)] = (int) $hideInnerLines;
 
 				$hidedetails= GETPOST('hidedetails', 'int');
 				if (!isset($_SESSION[$sessname2]) || !is_array($_SESSION[$sessname2]) || !array_key_exists($object->id, $_SESSION[$sessname2]))
@@ -975,6 +999,7 @@ class ActionsSubtotal
                         } else {
                             $hideInnerLines = isset($_SESSION[$sessname][$object->id]) ? $_SESSION[$sessname][$object->id] : 0;
                         }
+						$this->pdf_hide_inner_lines[$object->element.':'.((int) $object->id)] = (int) $hideInnerLines;
                         if (GETPOSTISSET('hidedetails')) {
                             $hidedetails = GETPOST('hidedetails', 'int');
                         } else {
@@ -1207,7 +1232,7 @@ class ActionsSubtotal
 		}
 
 
-		$hideInnerLines = GETPOST('hideInnerLines', 'int');
+		$hideInnerLines = $this->getPdfHideInnerLines($object);
 		if (getDolGlobalString('SUBTOTAL_ONE_LINE_IF_HIDE_INNERLINES') && $hideInnerLines && !empty($subtotal_last_title_posy))
 		{
 			$posy = $subtotal_last_title_posy;
@@ -1407,7 +1432,7 @@ class ActionsSubtotal
 		$subtotal_last_title_posy = $posy;
 		$pdf->SetXY ($posx, $posy);
 
-		$hideInnerLines = GETPOST('hideInnerLines', 'int');
+		$hideInnerLines = $this->getPdfHideInnerLines($object);
 
 		$style = ($line->qty==1) ? 'BU' : 'BUI';
 		if (getDolGlobalString('SUBTOTAL_TITLE_STYLE')) $style = getDolGlobalString('SUBTOTAL_TITLE_STYLE');
@@ -1594,7 +1619,7 @@ class ActionsSubtotal
                 $this->resprints = $object->lines[$parameters['i']]->qty;
                 return 1;
             } elseif (getDolGlobalString('SUBTOTAL_IF_HIDE_PRICES_SHOW_QTY')) {
-                $hideInnerLines = GETPOST('hideInnerLines', 'int');
+                $hideInnerLines = $this->getPdfHideInnerLines($object);
                 $hidedetails = GETPOST('hidedetails', 'int');
 				if (empty($hideInnerLines) && !empty($hidedetails)) {
                     $this->resprints = $object->lines[$parameters['i']]->qty;
@@ -2228,7 +2253,7 @@ class ActionsSubtotal
         }
 
 
-		$hideInnerLines = GETPOST('hideInnerLines', 'int');
+		$hideInnerLines = $this->getPdfHideInnerLines($object);
 		$hidedetails = GETPOST('hidedetails', 'int');
 
 		if ($hideInnerLines) { // si c une ligne de titre
@@ -2393,7 +2418,7 @@ class ActionsSubtotal
 		$h = $parameters['h'];
 		$w = $parameters['w'];
 
-		$hideInnerLines = GETPOST('hideInnerLines', 'int');
+		$hideInnerLines = $this->getPdfHideInnerLines($object);
 		$hidedetails = GETPOST('hidedetails', 'int');
 
 		if($this->isModSubtotalLine($parameters,$object) ){
