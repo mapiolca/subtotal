@@ -80,7 +80,7 @@ class modSubtotal extends DolibarrModules
 		// use this->picto='pictovalue'
 		// If file is in module/img directory under name object_pictovalue.png
 		// use this->picto='pictovalue@module'
-		$this->picto = 'fa-list-alt';
+		$this->picto = 'modsubtotal@subtotal';
 		// Defined all module parts (triggers, login, substitutions, menus, css, etc...)
 		// for default path (eg: /titre/core/xxxxx) (0=disable, 1=enable)
 		// for specific path of parts (eg: /titre/core/modules/barcode)
