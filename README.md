@@ -1,5 +1,7 @@
 # Subtotal 4.0.0
 
+Date de publication : **2026-10-28**.
+
 Subtotal ajoute des titres, sous-titres, textes libres et sous-totaux aux propositions commerciales, commandes, factures et documents fournisseurs pris en charge par Dolibarr.
 
 ## Fonctionnalités
