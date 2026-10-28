@@ -39,6 +39,11 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/pdf.lib.php';
  */
 class pdf_crabe_subtotal extends ModelePDFFactures
 {
+	/** @var int Display product/service codes. */
+	public $option_codeproduitservice;
+	/** @var bool Whether the issuer is exempt from VAT. */
+	public $franchise;
+
     var $db;
     var $name;
     var $description;
@@ -72,6 +77,7 @@ class pdf_crabe_subtotal extends ModelePDFFactures
 
 		$this->db = $db;
 		$this->name = "crabe_subtotal";
+		$this->scandir = '';
 		// J'ajoute l'annotation "déprécié" mais à garder... des fois qu'un client avec une vieille version utilise les modèles PDF custom
 		$this->description = 'Modèle de facture incluant des spécificités pour le module sous-total. (déprécié)';
 

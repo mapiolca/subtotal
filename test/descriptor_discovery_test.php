@@ -38,7 +38,7 @@ $langs = new DescriptorTestTranslations();
 $conf = (object) array('entity' => 1);
 require_once __DIR__.'/../core/modules/modSubtotal.class.php';
 $descriptor = new modSubtotal(null);
-if ($descriptor->version !== '4.0.0' || $descriptor->menu !== array()) {
+if ($descriptor->version !== '4.0.1' || $descriptor->menu !== array()) {
 	throw new RuntimeException('Unexpected descriptor version or native menu declaration.');
 }
 restore_error_handler();
