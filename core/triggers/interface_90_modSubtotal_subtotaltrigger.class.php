@@ -45,10 +45,10 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
         $this->db = $db;
 
         $this->name = preg_replace('/^Interface/i', '', get_class($this));
-        $this->family = "demo";
-        $this->description = "Triggers of this module are subtotal functions.";
+        $this->family = 'ATM Consulting x Les Métiers du Bâtiment';
+        $this->description = 'SubtotalTriggerDescription';
         // 'development', 'experimental', 'dolibarr' or version
-        $this->version = 'development';
+        $this->version = '4.0.0';
         $this->picto = 'subtotal@subtotal';
     }
 
@@ -69,7 +69,10 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
      */
     public function getDesc()
     {
-        return $this->description;
+        global $langs;
+
+        $langs->load('subtotal@subtotal');
+        return $langs->trans($this->description);
     }
 
     /**
@@ -94,52 +97,90 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
         }
     }
 
+	/**
+	 * @param CommonObject $parent Loaded parent, authorized by the native caller.
+	 * @param CommonObjectLine $object Inserted line.
+	 * @param int $rang Selected title rank.
+	 * @return int Negative on error, zero if the title is absent, positive on success.
+	 */
 	public function addToBegin(&$parent, &$object, $rang)
 	{
-		foreach ($parent->lines as &$line)
-		{
-			// Si (ma ligne courrante n'est pas celle que je viens d'ajouter) et que (le rang courrant est supérieure au rang du titre)
-			if ($object->id != $line->id && $line->rang > $rang)
-			{
-				// Update du rang de toutes les lignes suivant mon titre
-				$parent->updateRangOfLine($line->id, $line->rang+1);
+		foreach ($parent->lines as $line) {
+			if ((int) $line->rang === (int) $rang && TSubtotal::isTitle($line) && (int) $line->id !== (int) $object->id) {
+				return $this->moveInsertedLine($parent, $object, (int) $rang + 1);
 			}
 		}
-
-		// Update du rang de la ligne fraichement ajouté pour la déplacer sous mon titre
-		$parent->updateRangOfLine($object->id, $rang+1);
-		$object->rang = $rang+1;
+		return 0;
 	}
 
+	/**
+	 * @param CommonObject $parent Loaded parent, authorized by the native caller.
+	 * @param CommonObjectLine $object Inserted line.
+	 * @param int $rang Selected title rank.
+	 * @return int Negative on error, zero if the title is absent, positive on success.
+	 */
 	public function addToEnd(&$parent, &$object, $rang)
 	{
-		$title_level = -1;
-		$subtotal_line_found = false;
-		foreach ($parent->lines as $k => &$line)
-		{
-			if ($line->rang < $rang) continue;
-			elseif ($line->rang == $rang) // Je suis sur la ligne de titre où je souhaite ajouter ma nouvelle ligne en fin de bloc
-			{
-				$title_level = $line->qty;
+		$titleLevel = null;
+		$targetRank = 1;
+		foreach ($parent->lines as $line) {
+			if ((int) $line->id === (int) $object->id) {
+				continue;
 			}
-			elseif (!$subtotal_line_found && $title_level > -1 && ($line->qty == 100 - $title_level)) // Le level de mon titre a été trouvé avant, donc maintenant je vais m'arrêter jusqu'à trouver un sous-total
-			{
-				$subtotal_line_found = true;
-				$rang = $line->rang;
-			}
-
-
-			if ($subtotal_line_found)
-			{
-				$parent->updateRangOfLine($line->id, $line->rang+1);
+			$targetRank = max($targetRank, (int) $line->rang + 1);
+			if ((int) $line->rang === (int) $rang && TSubtotal::isTitle($line)) {
+				$titleLevel = TSubtotal::getNiveau($line);
+			} elseif ((int) $line->rang > (int) $rang && $titleLevel !== null
+				&& (TSubtotal::isTitle($line) || TSubtotal::isSubtotal($line))
+				&& TSubtotal::getNiveau($line) <= $titleLevel) {
+				// An open section ends at the next peer/ancestor title or closing subtotal.
+				$targetRank = (int) $line->rang;
+				break;
 			}
 		}
+		return $titleLevel === null ? 0 : $this->moveInsertedLine($parent, $object, $targetRank);
+	}
 
-		if ($subtotal_line_found)
-		{
-			$parent->updateRangOfLine($object->id, $rang);
-			$object->rang = $rang;
+	/**
+	 * Reorder only the interval crossed by the inserted line, in the caller's transaction.
+	 *
+	 * @param CommonObject $parent Loaded parent.
+	 * @param CommonObjectLine $object Inserted line.
+	 * @param int $targetRank Insert before this rank, excluding the inserted line.
+	 * @return int Negative on error, positive on success.
+	 */
+	protected function moveInsertedLine(&$parent, &$object, $targetRank)
+	{
+		$oldRank = (int) $object->rang;
+		$newRank = $targetRank > $oldRank ? $targetRank - 1 : $targetRank;
+		if ($newRank === $oldRank) {
+			return 1;
 		}
+		foreach ($parent->lines as $line) {
+			if ((int) $line->id === (int) $object->id) {
+				continue;
+			}
+			$rank = (int) $line->rang;
+			if ($newRank < $oldRank && $rank >= $newRank && $rank < $oldRank) {
+				$rank++;
+			} elseif ($newRank > $oldRank && $rank > $oldRank && $rank <= $newRank) {
+				$rank--;
+			} else {
+				continue;
+			}
+			if ($parent->updateRangOfLine($line->id, $rank) < 0) {
+				$this->error = $parent->error;
+				$this->errors = $parent->errors;
+				return -1;
+			}
+		}
+		if ($parent->updateRangOfLine($object->id, $newRank) < 0) {
+			$this->error = $parent->error;
+			$this->errors = $parent->errors;
+			return -1;
+		}
+		$object->rang = $newRank;
+		return 1;
 	}
 
     /**
@@ -156,7 +197,6 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
      */
     public function runTrigger($action, $object, User $user, Translate $langs, Conf $conf)
     {
-		global $user;
        #COMPATIBILITÉ V16
 		require_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
 		require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
@@ -167,11 +207,7 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
 		}
 
 		if ($action == 'LINEORDER_UPDATE'){
-			$action == 'LINEORDER_MODIFY';
-		}
-
-		if ($action == 'LINEBILL_UPDATE'){
-			$action = 'LINEBILL_MODIFY';
+			$action = 'LINEORDER_MODIFY';
 		}
 
 		if ($action == 'LINEBILL_SUPPLIER_UPDATE'){
@@ -182,9 +218,9 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
 			static $TInvoices = array();
 			if (!array_key_exists($object->fk_facture, $TInvoices) || (array_key_exists($object->fk_facture, $TInvoices) && $TInvoices[$object->fk_facture] === null)) {
 				$staticInvoice = new Facture($this->db);
-				if ($staticInvoice->fetch($object->fk_facture) < 0){
+				if ($staticInvoice->fetch($object->fk_facture) <= 0){
 					$object->error = $staticInvoice->error;
-					$object->errors []= $staticInvoice->errors;
+					$object->errors = $staticInvoice->errors;
 					return -1;
 				}
 				$isEligible = $staticInvoice->type == Facture::TYPE_DEPOSIT && GETPOST('typedeposit', 'aZ09') == "variablealllines";
@@ -193,10 +229,11 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
 			if ($TInvoices[$object->fk_facture]) {
 				if (!empty($object->origin) && !empty($object->origin_id) && $object->special_code == TSubtotal::$module_number){
 					$valuedeposit = price2num(str_replace('%', '', GETPOST('valuedeposit', 'alpha')), 'MU');
+					if ((float) $valuedeposit <= 0) {
+						return -1;
+					}
 					$object->qty = 100 * $object->qty / $valuedeposit;
-					if ($object->update('', 1) < 0){
-						$object->error = $object->error;
-						$object->errors []= $object->errors;
+					if ($object->update($user, 1) < 0){
 						return -1;
 					}
 				}
@@ -228,7 +265,7 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
 
             $originSendingLineFetchReturn = $originSendingLine->fetch($object->origin_id);
 
-            if ($originSendingLineFetchReturn < 0) {
+            if ($originSendingLineFetchReturn <= 0) {
                 $this->error = $originSendingLine->error;
                 $this->errors = $originSendingLine->errors;
                 return $originSendingLineFetchReturn;
@@ -237,9 +274,15 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
             require_once DOL_DOCUMENT_ROOT . '/commande/class/commande.class.php';
             $originOrderLine = new OrderLine($this->db);
 
-			$originOrderLineFetchReturn = $originOrderLine->fetch($originSendingLine->fk_elementdet ?? $originSendingLine->fk_elementdet);
+			$originOrderLineId = !empty($originSendingLine->fk_elementdet)
+				? (int) $originSendingLine->fk_elementdet
+				: (!empty($originSendingLine->origin_line_id) ? (int) $originSendingLine->origin_line_id : 0);
+			if ($originOrderLineId <= 0) {
+				return -1;
+			}
+			$originOrderLineFetchReturn = $originOrderLine->fetch($originOrderLineId);
 
-            if ($originOrderLineFetchReturn < 0) {
+            if ($originOrderLineFetchReturn <= 0) {
                 $this->error = $originOrderLine->error;
                 $this->errors = $originOrderLine->errors;
                 return $originOrderLineFetchReturn;
@@ -266,26 +309,29 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
 				switch ($action) {
 					case 'LINEPROPAL_INSERT':
 						$parent = new Propal($this->db);
-						$parent->fetch($object->fk_propal);
+						$parentResult = $parent->fetch($object->fk_propal);
 						break;
 					case 'LINEORDER_INSERT':
 						$parent = new Commande($this->db);
-						$parent->fetch($object->fk_commande);
+						$parentResult = $parent->fetch($object->fk_commande);
 						break;
 					case 'LINEBILL_INSERT':
 						$parent = new Facture($this->db);
-						$parent->fetch($object->fk_facture);
+						$parentResult = $parent->fetch($object->fk_facture);
 						break;
-                    case 'LINEBILL_SUPPLIER_CREATE':
-                        $parent = new FactureFournisseur($this->db);
-                        $parent->fetch($object->fk_facture_fourn);
 					default:
-						$parent = $object;
-						break;
+						return 0;
 				}
-
-				if (getDolGlobalString('SUBTOTAL_ADD_LINE_UNDER_TITLE_AT_END_BLOCK')) $this->addToEnd($parent, $object, $rang);
-				else $this->addToBegin($parent, $object, $rang);
+				if ($parentResult <= 0) {
+					$this->error = $parent->error;
+					$this->errors = $parent->errors;
+					return -1;
+				}
+				$result = getDolGlobalString('SUBTOTAL_ADD_LINE_UNDER_TITLE_AT_END_BLOCK')
+					? $this->addToEnd($parent, $object, $rang) : $this->addToBegin($parent, $object, $rang);
+				if ($result < 0) {
+					return -1;
+				}
 
 			}
 
@@ -377,7 +423,7 @@ class Interfacesubtotaltrigger extends DolibarrTriggers
 
 		}
 
-		if ($action == 'LINEBILL_UPDATE' || 'LINEBILL_MODIFY')
+		if (in_array($action, array('LINEBILL_UPDATE', 'LINEBILL_MODIFY'), true))
 		{
 			if (GETPOST('all_progress', 'none') && TSubtotal::isModSubtotalLine($object))
 			{

@@ -1,166 +1,177 @@
 <?php
 /**
-* SPDX-License-Identifier: GPL-3.0-or-later
-* This file is part of Dolibarr module Subtotal
-*/
+ * Protected AJAX controller for Subtotal document-line operations.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 
+require '../config.php';
 
-	if (! defined('NOTOKENRENEWAL')) define('NOTOKENRENEWAL', 1);
-	if (! defined('NOCSRFCHECK')) define('NOCSRFCHECK', 1);
+dol_include_once('/subtotal/lib/subtotal.lib.php');
+dol_include_once('/subtotal/class/subtotal.class.php');
+dol_include_once('/subtotal/class/subtotalaccess.class.php');
+require_once __DIR__.'/../class/subTotalJsonResponse.class.php';
 
-	require '../config.php';
+global $db, $langs, $user;
 
-	dol_include_once('/subtotal/lib/subtotal.lib.php');
-	dol_include_once('/subtotal/class/subtotal.class.php');
-	dol_include_once('/comm/propal/class/propal.class.php');
-	dol_include_once('/commande/class/commande.class.php');
-	dol_include_once('/compta/facture/class/facture.class.php');
-	dol_include_once('/fourn/class/fournisseur.commande.class.php');
-	dol_include_once('/supplier_proposal/class/supplier_proposal.class.php');
-	dol_include_once('/fourn/class/fournisseur.facture.class.php');
-	require_once __DIR__ . '/../class/subTotalJsonResponse.class.php';
+$langs->load('subtotal@subtotal');
+header('Content-Type: application/json; charset=UTF-8');
 
-	$get=GETPOST('get', 'none');
-	$set=GETPOST('set', 'none');
+$response = new SubTotalJsonResponse();
 
-	switch ($get) {
-		//récupération des lignes contenues dans un titre sous total en fonction d'un élément et de la ligne de titre concernée
-		case 'getLinesFromTitle':
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+	subtotalAjaxError($response, 'SubtotalAjaxPostRequired', 405);
+}
+if (!isModEnabled('subtotal')) {
+	subtotalAjaxError($response, 'ModuleNotEnabled', 503);
+}
 
-			global $db;
+// main.inc.php validates the CSRF token for POST requests carrying a sensitive action.
+$action = GETPOST('action', 'aZ09');
+if (empty($action) || empty(GETPOST('token', 'alphanohtml'))) {
+	subtotalAjaxError($response, 'ErrorBadToken', 403);
+}
 
-			$element = GETPOST('element', 'none');
-			$element_id = GETPOST('elementid', 'none');
-			$id_line = GETPOST('lineid', 'int');
+$data = GETPOST('data', 'array');
+if (!is_array($data)) {
+	$data = array();
+}
 
-			$object = new $element($db);
-			$object->fetch($element_id);
+$element = !empty($data['element']) ? SubtotalAccess::normalizeElement($data['element']) : SubtotalAccess::normalizeElement(GETPOST('element', 'aZ09'));
+$elementId = !empty($data['element_id']) ? (int) $data['element_id'] : GETPOSTINT('elementid');
+$lineId = !empty($data['lineid']) ? (int) $data['lineid'] : GETPOSTINT('lineid');
 
-			if(!empty($object->lines)) {
-				$TRes = array();
+$object = SubtotalAccess::fetchObject($element, $elementId);
+if (!is_object($object)) {
+	subtotalAjaxError($response, 'ErrorFetchingElement', 404);
+}
 
-				foreach ($object->lines as $line) {
-					if ($line->id == $id_line) {
-						$title_line = $line;
-						$subline_line = TSubtotal::getSubLineOfTitle($object, $title_line->rang);
-						break;
-					}
-				}
-
-				foreach ($object->lines as $line) {
-
-					$parent_line = TSubtotal::getParentTitleOfLine($object, $line->rang);
-
-					if(!empty($subline_line)) {
-						if ($line->product_type != 9 && $line->rang > $title_line->rang && $line->rang < $subline_line->rang) {
-							$TRes[$parent_line->id][] = $line->id;
-						}
-					} else {
-						if ($line->product_type != 9 && $line->rang > $title_line->rang) {
-							$TRes[$parent_line->id][] = $line->id;
-						}
-					}
-				}
-			}
-
-			echo json_encode($TRes);
-			break;
-		default:
-			break;
+if ($action === 'getLinesFromTitle') {
+	if (!SubtotalAccess::canRead($user, $object)) {
+		subtotalAjaxError($response, 'NotEnoughPermissions', 403);
+	}
+	$titleLine = SubtotalAccess::findLine($object, $lineId);
+	if (!is_object($titleLine) || !TSubtotal::isTitle($titleLine)) {
+		subtotalAjaxError($response, 'SubtotalLineNotFound', 404);
 	}
 
-	switch ($set) {
-		case 'updateLineNC': // Gestion du Compris/Non Compris via les titres et/ou lignes
-			echo json_encode( _updateLineNC(GETPOST('element', 'none'), GETPOST('elementid', 'none'), GETPOST('lineid', 'none'), GETPOST('subtotal_nc', 'none')) );
-
-			break;
-
-		//Mise à jour de la donnée "hideblock" sur une ligne titre afin de savoir si le bloc doit être caché ou pas
-		case 'update_hideblock_data':
-			$jsonResponse = new SubTotalJsonResponse();
-			_updateHideBlockData($jsonResponse);
-			echo $jsonResponse->getJsonResponse();
-			break;
-
-		case 'updateall_hideblock_data' :
-			$element = GETPOST('element', 'alphanohtml');
-			$element_id = GETPOST('elementid', 'int');
-			$value = GETPOST('value', 'int');
-
-			$object = new $element($db);
-			$object->fetch($element_id);
-
-			if(!empty($object->lines)) {
-				foreach ($object->lines as $line) {
-					if ($line->product_type == 9) {
-						$line->fetch_optionals();
-						$line->array_options['options_hideblock'] = $value;
-						$line->insertExtraFields();
-					}
-				}
-			}
-
-			break;
-		default:
-			break;
+	$result = array();
+	$subline = TSubtotal::getSubLineOfTitle($object, $titleLine->rang);
+	foreach ($object->lines as $line) {
+		if ((int) $line->product_type === 9 || (int) $line->rang <= (int) $titleLine->rang) {
+			continue;
+		}
+		if (is_object($subline) && (int) $line->rang >= (int) $subline->rang) {
+			continue;
+		}
+		$parentLine = TSubtotal::getParentTitleOfLine($object, $line->rang);
+		if (is_object($parentLine)) {
+			$result[(int) $parentLine->id][] = (int) $line->id;
+		}
 	}
+	$response->result = 1;
+	$response->data = $result;
+	print $response->getJsonResponse();
+	exit;
+}
 
+if (!SubtotalAccess::canWrite($user, $object)) {
+	subtotalAjaxError($response, 'NotEnoughPermissions', 403);
+}
+if (!SubtotalAccess::isEditable($object)) {
+	subtotalAjaxError($response, 'SubtotalObjectNotEditable', 409);
+}
 
+switch ($action) {
+	case 'updateLineNC':
+		if (!is_object(SubtotalAccess::findLine($object, $lineId))) {
+			subtotalAjaxError($response, 'SubtotalLineNotFound', 404);
+		}
+		$result = _updateLineNC($element, $elementId, $lineId, !empty($data['subtotal_nc']) ? 1 : GETPOSTINT('subtotal_nc'));
+		if ($result < 0) {
+			subtotalAjaxError($response, 'subtotal_update_nc_error', 422);
+		}
+		$response->result = 1;
+		$response->msg = $langs->trans('subtotal_update_nc_success');
+		break;
 
+	case 'updateHideBlockData':
+		$titleStatusList = isset($data['titleStatusList']) && is_array($data['titleStatusList']) ? $data['titleStatusList'] : array();
+		if (empty($titleStatusList)) {
+			subtotalAjaxError($response, 'SubtotalAjaxMissingStatusList', 400);
+		}
 
+		$db->begin();
+		$error = 0;
+		foreach ($titleStatusList as $lineStatus) {
+			$statusLineId = isset($lineStatus['id']) ? (int) $lineStatus['id'] : 0;
+			$status = !empty($lineStatus['status']) ? 1 : 0;
+			$line = SubtotalAccess::findLine($object, $statusLineId);
+			if (!is_object($line) || !TSubtotal::isTitle($line)) {
+				$error++;
+				break;
+			}
+			$line->fetch_optionals();
+			$line->array_options['options_hideblock'] = $status;
+			if ($line->insertExtraFields() < 0) {
+				$error++;
+				break;
+			}
+		}
+		if ($error) {
+			$db->rollback();
+			subtotalAjaxError($response, 'SubtotalAjaxUpdateFailed', 422);
+		}
+		$db->commit();
+		$response->result = 1;
+		$response->msg = $langs->trans('RecordSaved');
+		break;
+
+	case 'updateAllHideBlockData':
+		$value = !empty($data['value']) ? 1 : 0;
+		$db->begin();
+		$error = 0;
+		foreach ($object->lines as $line) {
+			if (!TSubtotal::isTitle($line)) {
+				continue;
+			}
+			$line->fetch_optionals();
+			$line->array_options['options_hideblock'] = $value;
+			if ($line->insertExtraFields() < 0) {
+				$error++;
+				break;
+			}
+		}
+		if ($error) {
+			$db->rollback();
+			subtotalAjaxError($response, 'SubtotalAjaxUpdateFailed', 422);
+		}
+		$db->commit();
+		$response->result = 1;
+		$response->msg = $langs->trans('RecordSaved');
+		break;
+
+	default:
+		subtotalAjaxError($response, 'SubtotalAjaxUnknownAction', 400);
+}
+
+print $response->getJsonResponse();
 
 /**
- * @param SubTotalJsonResponse $jsonResponse
- * @return bool|void
+ * Return a translated JSON error and stop execution.
+ *
+ * @param SubTotalJsonResponse $response Response.
+ * @param string               $translationKey Translation key.
+ * @param int                  $status HTTP status.
+ * @return void
  */
-function _updateHideBlockData($jsonResponse) {
-	global  $db, $langs;
+function subtotalAjaxError($response, $translationKey, $status)
+{
+	global $langs;
 
-	$data = GETPOST('data', 'array');
-
-	$element = $data['element'];
-	$element_id = $data['element_id'];
-
-	if(empty($element)){
-		$jsonResponse->msg = $langs->trans('ElementMissing');
-		$jsonResponse->result = 0;
-		return false;
-	}
-
-	if(empty($element_id)){
-		$jsonResponse->msg = $langs->trans('ElementIdMissing');
-		$jsonResponse->result = 0;
-		return false;
-	}
-
-	$titleStatusList = $data['titleStatusList'];
-
-
-	if(!empty($titleStatusList)){
-		$object = new $element($db); // TODO : repris du dev de base mais il faut ajouter de la vérification ça c'est pas normale
-
-		if($object->fetch($element_id) <= 0){
-			$jsonResponse->msg = $langs->trans('ErrorFetchingElement');
-			$jsonResponse->result = 0;
-			return false;
-		}
-
-		if($object->fetch($element_id) >0 && !empty($object->lines)) {
-			foreach ($object->lines as $line) {
-				if ($line->product_type != 9) { // si ce n'est pas du sous total, skip
-					continue;
-				}
-
-				foreach($titleStatusList as $lineStatus){
-					if ($line->id = $lineStatus['id']) {
-						$line->fetch_optionals();
-						$line->array_options['options_hideblock'] = intval($lineStatus['status']);
-						$line->insertExtraFields();
-					}
-				}
-			}
-		}
-	}
-
-	$jsonResponse->result = 1;
+	http_response_code((int) $status);
+	$response->result = 0;
+	$response->msg = $langs->trans($translationKey);
+	print $response->getJsonResponse();
+	exit;
 }

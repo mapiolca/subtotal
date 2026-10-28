@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__.'/../lib/subtotal_pdf.lib.php';
 /**
 * SPDX-License-Identifier: GPL-3.0-or-later
 * This file is part of Dolibarr module Subtotal
@@ -972,7 +973,7 @@ class TSubtotal {
 	 */
 	public static function addRecapPage(&$parameters, &$origin_pdf)
 	{
-		global $user,$conf,$langs;
+		global $user,$conf,$langs,$mysoc;
 
 		$origin_file = $parameters['file'];
 		$outputlangs = $parameters['outputlangs'];
@@ -986,11 +987,12 @@ class TSubtotal {
 		$objmarge->marge_gauche = 10;
 		$objmarge->marge_haute = 10;
 		$objmarge->marge_droite = 10;
+		$objmarge->marge_basse = (float) getDolGlobalInt('MAIN_PDF_MARGIN_BOTTOM', 10);
 
 		$objectref = dol_sanitizeFileName($object->ref);
-		if ($object->element == 'propal') $dir = $conf->propal->dir_output . '/' . $objectref;
-		elseif ($object->element == 'commande') $dir = $conf->commande->dir_output . '/' . $objectref;
-		elseif ($object->element == 'facture') $dir = $conf->facture->dir_output . '/' . $objectref;
+		if ($object->element == 'propal') $dir = subtotalPdfGetOutputBase($object, 'propal') . '/' . $objectref;
+		elseif ($object->element == 'commande') $dir = subtotalPdfGetOutputBase($object, 'commande') . '/' . $objectref;
+		elseif ($object->element == 'facture') $dir = subtotalPdfGetOutputBase($object, 'facture') . '/' . $objectref;
 		elseif ($object->element == 'facturerec') return; // no PDF for facturerec
 		else
 		{
@@ -1013,7 +1015,7 @@ class TSubtotal {
 		// Set path to the background PDF File
 		if (!getDolGlobalString('MAIN_DISABLE_FPDI') && getDolGlobalString('MAIN_ADD_PDF_BACKGROUND'))
 		{
-			$pagecount = $pdf->setSourceFile($conf->mycompany->dir_output.'/' . getDolGlobalString('MAIN_ADD_PDF_BACKGROUND'));
+			$pagecount = $pdf->setSourceFile(subtotalPdfGetCompanyOutputBase($object->entity).'/' . getDolGlobalString('MAIN_ADD_PDF_BACKGROUND'));
 			$tplidx = $pdf->importPage(1);
 		}
 
@@ -1046,7 +1048,7 @@ class TSubtotal {
 		$pdf->SetTextColor(0,0,0);
 
 		$heightforinfotot = 25;	// Height reserved to output the info and total part
-		$heightforfooter = $objmarge->marge_basse + 8;	// Height reserved to output the footer (value include bottom margin)
+		$heightforfooter = subtotalPdfGetFooterHeight($objmarge->marge_basse);
 
 		$posx_designation = 25;
 		$posx_options = 150;
@@ -1150,7 +1152,7 @@ class TSubtotal {
 
 				$pdf->setPage($pageposbefore);
 				$pdf->setTopMargin($objmarge->marge_haute);
-				$pdf->setPageOrientation('', 1, 0);	// The only function to edit the bottom margin of current page to set it.
+				$pdf->setPageOrientation('', 1, $heightforfooter);
 
 				// We suppose that a too long description or photo were moved completely on next page
 				if ($pageposafter > $pageposbefore && empty($showpricebeforepagebreak)) {
@@ -1184,10 +1186,22 @@ class TSubtotal {
 					{
 						self::tableau($objmarge, $pdf, $posx_designation, $posx_options, $posx_montant, $tab_top_newpage, $objmarge->page_hauteur - $tab_top_newpage - $heightforfooter, 0, $outputlangs, $hidetop, 1, $object->multicurrency_code);
 					}
+					pdf_pagefoot(
+						$pdf,
+						$outputlangs,
+						'',
+						$mysoc,
+						$objmarge->marge_basse,
+						$objmarge->marge_gauche,
+						$objmarge->page_hauteur,
+						$object,
+						getDolGlobalInt('MAIN_GENERATE_DOCUMENTS_SHOW_FOOT_DETAILS'),
+						1
+					);
 
 					$pagenb++;
 					$pdf->setPage($pagenb);
-					$pdf->setPageOrientation('', 1, 0);	// The only function to edit the bottom margin of current page to set it.
+					$pdf->setPageOrientation('', 1, $heightforfooter);
 					if (!getDolGlobalString('MAIN_PDF_DONOTREPEAT_HEAD')) self::pagehead($objmarge, $pdf, $object, 0, $outputlangs);
 				}
 			}
@@ -1207,6 +1221,19 @@ class TSubtotal {
 
 		// Affiche zone totaux
 		$posy=self::tableau_tot($objmarge, $pdf, $object, $bottomlasttab, $outputlangs, $TTot);
+
+		pdf_pagefoot(
+			$pdf,
+			$outputlangs,
+			'',
+			$mysoc,
+			$objmarge->marge_basse,
+			$objmarge->marge_gauche,
+			$objmarge->page_hauteur,
+			$object,
+			getDolGlobalInt('MAIN_GENERATE_DOCUMENTS_SHOW_FOOT_DETAILS'),
+			0
+		);
 
 		$pdf->Close();
 		$pdf->Output($file,'F');
@@ -1256,7 +1283,7 @@ class TSubtotal {
 
 		$pdf->SetXY($objmarge->marge_gauche,$posy);
 
-		$logo=$conf->mycompany->dir_output.'/logos/'.$mysoc->logo;
+		$logo = subtotalPdfGetCompanyOutputBase($object->entity).'/logos/'.$mysoc->logo;
 		if ($mysoc->logo)
 		{
 			if (is_readable($logo))
@@ -1478,9 +1505,12 @@ class TSubtotal {
 	 */
 	public static function concat(&$outputlangs, $files, $fileoutput='')
 	{
-		global $conf;
-
-		if (empty($fileoutput)) $fileoutput = $file[0];
+		if (empty($files) || !is_array($files)) {
+			return -1;
+		}
+		if (empty($fileoutput)) {
+			$fileoutput = $files[0];
+		}
 
 		$pdf=pdf_getInstance();
         if (class_exists('TCPDF'))
@@ -1493,9 +1523,14 @@ class TSubtotal {
         if (getDolGlobalString('MAIN_DISABLE_PDF_COMPRESSION')) $pdf->SetCompression(false);
 
 
+		$totalPageCount = 0;
 		foreach($files as $file)
 		{
+			if (!is_readable($file)) {
+				return -1;
+			}
 			$pagecount = $pdf->setSourceFile($file);
+			$totalPageCount += $pagecount;
 			for ($i = 1; $i <= $pagecount; $i++)
 			{
 				$tplidx = $pdf->ImportPage($i);
@@ -1506,9 +1541,11 @@ class TSubtotal {
 		}
 
 		$pdf->Output($fileoutput,'F');
-		if (getDolGlobalString('MAIN_UMASK')) @chmod($file, octdec(getDolGlobalString('MAIN_UMASK')));
+		if (getDolGlobalString('MAIN_UMASK')) {
+			@chmod($fileoutput, octdec(getDolGlobalString('MAIN_UMASK')));
+		}
 
-		return $pagecount;
+		return $totalPageCount;
 	}
 
 	/**
@@ -1555,9 +1592,11 @@ class TSubtotal {
 	 */
 	public static function getHtmlDictionnary():string
 	{
-		global $db;
+		global $db, $conf;
 		$value = '';
-		$sql = 'SELECT content FROM '.$db->prefix().'c_subtotal_free_text WHERE rowid = '.GETPOST('rowid', 'int');
+		$sql = 'SELECT content FROM '.$db->prefix().'c_subtotal_free_text';
+		$sql .= ' WHERE rowid = '.GETPOSTINT('rowid');
+		$sql .= ' AND entity = '.((int) $conf->entity);
 		$resql = $db->query($sql);
 		if ($resql && ($obj = $db->fetch_object($resql))) {
 			$value = $obj->content;

@@ -1,7 +1,26 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-# [Unreleased]
+# 4.0.0 — en préparation
+
+- Sécurisation des actions Ajax : POST, jeton CSRF Dolibarr, liste blanche d’actions, droits natifs, document parent et entité contrôlés.
+- Sécurisation de l’API REST : types autorisés, droits de lecture, contrôle Multicompany et suppression des requêtes SQL construites depuis l’entrée.
+- Correction du rendu des titres, textes libres et sous-totaux sur les factures de situation selon le nombre réel de colonnes affichées.
+- Largeur du sélecteur de titre bornée avec le Select2 natif, sans élargissement du tableau par les libellés longs ; barre de repli alignée sur le nombre réel de colonnes.
+- Insertion en fin de section fonctionnelle même sans sous-total de fermeture, avec prise en compte des niveaux imbriqués et remontée des erreurs de classement.
+- Reprise complète de la correction PHP 8.2 du descripteur : propriété native `menu` et suppression de la propriété obsolète `special`.
+- Alignement de l’option « Ajouter le récapitulatif » sur les autres options de génération documentaire.
+- Conservation du choix « Masquer les lignes internes » lors des régénérations automatiques des PDF, sans réutiliser le choix d’un autre document ; un choix explicite à zéro reste prioritaire.
+- Correction de la marge des sous-totaux des factures de situation : somme des marges de lignes avec coûts et montants proratisés selon l’avancement propre à chaque ligne.
+- Nouvelle administration native avec une seule roue dentée, onglets Réglages, Compatibilité et À propos ; page À propos alignée sur le rendu Timesheetweek.
+- Conservation du pictogramme d’origine dans la liste des modules, avec une copie renommée pour Dolibarr 25 ; déclaration du descripteur réutilisée dans l’onglet À propos.
+- Lien de l’éditeur renseigné avec le site `https://lesmetiersdubatiment.fr`.
+- Famille renommée `ATM Consulting x Les Métiers du Bâtiment` et version alignée sur `4.0.0`.
+- Conservation de l’identifiant historique `104777`, utilisé par les lignes comme `special_code`.
+- Prise en charge documentaire Multicompany et réservation renforcée des pieds de page PDF.
+- Suppression des copies de fichiers core, de l’aide demandant un remplacement du core et de la page À propos distante.
+- Conversion des anciennes migrations web en commandes CLI protégées et en lecture seule par défaut.
+- Ajout des index du dictionnaire de textes libres, de contrôles statiques et de la configuration PHPStan du module.
 
 ## Release 3.29
 - FIX : Align title and subtotal columns on validated situation invoices and keep subtotal labels readable when margins are displayed - *23/07/2026* - 3.29.2
@@ -202,4 +221,3 @@ All notable changes to this project will be documented in this file.
 - FIX: invoice creation: title/subtotal/free text lines coming from shipments or deliveries not imported with special code (MDLL) - *17/11/2021* - 3.5.8
 - FIX : Text or title line break PDF *15/04/2021* - 3.5.7
 - NEW Ajouter les lignes 'Titre' , 'total' , 'libre' aux generation d'expedition de commandes expédiables (il faudra supprimer les lignes de sous-total à la main si le besoin s'en fait sentir ) [2021-02-03]
-

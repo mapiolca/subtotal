@@ -1,2 +1,2 @@
 <?php
-// Empty Dolibarr stub loaded by the standalone PDF regression test.
+// Empty Dolibarr stub loaded by standalone regression tests.

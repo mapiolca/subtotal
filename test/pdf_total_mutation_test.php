@@ -13,6 +13,7 @@ define('DOL_VERSION', '23.0.2');
 $testHideInnerLines = 0;
 $testPdfTotals = array(100.0, 20.0, 120.0, array('20.000' => 20.0), 1.0);
 $testGlobalStrings = array();
+$testRequest = array();
 
 function dol_include_once($path)
 {
@@ -21,13 +22,16 @@ function dol_include_once($path)
 
 function GETPOST($key, $type = '')
 {
-	global $testHideInnerLines;
+	global $testHideInnerLines, $testRequest;
 
-	if ($key === 'hideInnerLines') {
-		return $testHideInnerLines;
-	}
+	return $key === 'hideInnerLines' ? (int) $testHideInnerLines : (isset($testRequest[$key]) ? $testRequest[$key] : 0);
+}
 
-	return 0;
+function GETPOSTISSET($key)
+{
+	global $testHideInnerLines, $testRequest;
+
+	return $key === 'hideInnerLines' ? $testHideInnerLines !== null : array_key_exists($key, $testRequest);
 }
 
 function getDolGlobalInt($key, $default = 0)
@@ -39,11 +43,7 @@ function getDolGlobalString($key, $default = '')
 {
 	global $testGlobalStrings;
 
-	if (array_key_exists($key, $testGlobalStrings)) {
-		return $testGlobalStrings[$key];
-	}
-
-	return $default;
+	return array_key_exists($key, $testGlobalStrings) ? $testGlobalStrings[$key] : $default;
 }
 
 function price($amount, $html = 0, $outputlangs = '', $trunc = 1, $rounding = -1, $nbdecimal = -1)
@@ -51,15 +51,10 @@ function price($amount, $html = 0, $outputlangs = '', $trunc = 1, $rounding = -1
 	return (string) ((float) $amount);
 }
 
-function getTotalLineFromObject(&$object, &$line, $useLevel = false, $returnAll = 0)
-{
-	global $testPdfTotals;
-
-	return $returnAll ? $testPdfTotals : $testPdfTotals[0];
-}
-
 class TSubtotal
 {
+	public static $module_number = 104777;
+
 	public static function showQtyForObject($object)
 	{
 		return false;
@@ -213,7 +208,17 @@ function createPdfObject($lines)
 
 require_once __DIR__.'/../class/actions_subtotal.class.php';
 
-$reflection = new ReflectionClass(ActionsSubtotal::class);
+class TestActionsSubtotal extends ActionsSubtotal
+{
+	public function getTotalLineFromObject(&$object, &$line, $use_level = false, $return_all = 0)
+	{
+		global $testPdfTotals;
+
+		return $return_all ? $testPdfTotals : $testPdfTotals[0];
+	}
+}
+
+$reflection = new ReflectionClass(TestActionsSubtotal::class);
 $actions = $reflection->newInstanceWithoutConstructor();
 
 $conf = new stdClass();
@@ -236,7 +241,6 @@ $_SESSION = array(
 );
 
 $actions->doActions(array('context' => 'invoicecard'), $object, 'builddoc', null);
-
 $actions->pdf_add_total($pdf, $object, $technicalLine, 'Subtotal', '', 10, 10, 100, 4);
 
 assertSameValue(1.0, $technicalLine->total_ht, 'Standard rendering changed total_ht');
@@ -245,7 +249,7 @@ assertSameValue(1.0, $technicalLine->total, 'Standard rendering changed total');
 assertSameValue(3.0, $technicalLine->total_ttc, 'Standard rendering changed total_ttc');
 assertSameValue(true, in_array('100', $pdf->printedValues, true), 'Standard rendering did not display the calculated subtotal');
 
-// Hidden inner lines must keep zero financial totals on both the source and PDF technical lines.
+// Hidden inner lines must keep zero financial totals on source and PDF technical lines.
 $productLine = new stdClass();
 $productLine->id = 20;
 $productLine->rowid = 20;
@@ -286,7 +290,7 @@ assertSameValue(0.0, $object->lines[0]->total_tva, 'Hidden-lines rendering chang
 assertSameValue(0.0, $object->lines[0]->total, 'Hidden-lines rendering changed total');
 assertSameValue(0.0, $object->lines[0]->total_ttc, 'Hidden-lines rendering changed total_ttc');
 
-// VAT replacement lines must carry each rate once while the technical line remains neutral.
+// VAT replacement lines must carry every amount once while the technical line stays neutral.
 $productLine20 = clone $productLine;
 $productLine20->id = 30;
 $productLine20->rowid = 30;
@@ -323,33 +327,31 @@ $actions->beforePDFCreation(array('i' => 0), $object, $action);
 
 assertSameValue(3, count($object->lines), 'VAT replacement did not create the expected PDF lines');
 
-$facturableTotalHt = 0.0;
-$facturableTotalVat = 0.0;
-$facturableTotalTtc = 0.0;
-$facturableMulticurrencyTotalHt = 0.0;
-$facturableMulticurrencyTotalVat = 0.0;
-$facturableMulticurrencyTotalTtc = 0.0;
+$facturableTotals = array(
+	'total_ht' => 0.0,
+	'total_tva' => 0.0,
+	'total_ttc' => 0.0,
+	'multicurrency_total_ht' => 0.0,
+	'multicurrency_total_tva' => 0.0,
+	'multicurrency_total_ttc' => 0.0,
+);
 $pdfTechnicalLine = null;
 foreach ($object->lines as $pdfLine) {
 	if ((int) $pdfLine->product_type === 9) {
 		$pdfTechnicalLine = $pdfLine;
 		continue;
 	}
-
-	$facturableTotalHt += (float) $pdfLine->total_ht;
-	$facturableTotalVat += (float) $pdfLine->total_tva;
-	$facturableTotalTtc += (float) $pdfLine->total_ttc;
-	$facturableMulticurrencyTotalHt += (float) $pdfLine->multicurrency_total_ht;
-	$facturableMulticurrencyTotalVat += (float) $pdfLine->multicurrency_total_tva;
-	$facturableMulticurrencyTotalTtc += (float) $pdfLine->multicurrency_total_ttc;
+	foreach (array_keys($facturableTotals) as $field) {
+		$facturableTotals[$field] += (float) $pdfLine->{$field};
+	}
 }
 
-assertSameValue(100.0, $facturableTotalHt, 'VAT replacement duplicated or lost total_ht');
-assertSameValue(16.0, $facturableTotalVat, 'VAT replacement duplicated or lost total_tva');
-assertSameValue(116.0, $facturableTotalTtc, 'VAT replacement duplicated or lost total_ttc');
-assertSameValue(110.0, $facturableMulticurrencyTotalHt, 'VAT replacement duplicated or lost multicurrency_total_ht');
-assertSameValue(17.6, $facturableMulticurrencyTotalVat, 'VAT replacement duplicated or lost multicurrency_total_tva');
-assertSameValue(127.6, $facturableMulticurrencyTotalTtc, 'VAT replacement duplicated or lost multicurrency_total_ttc');
+assertSameValue(100.0, $facturableTotals['total_ht'], 'VAT replacement duplicated or lost total_ht');
+assertSameValue(16.0, $facturableTotals['total_tva'], 'VAT replacement duplicated or lost total_tva');
+assertSameValue(116.0, $facturableTotals['total_ttc'], 'VAT replacement duplicated or lost total_ttc');
+assertSameValue(110.0, $facturableTotals['multicurrency_total_ht'], 'VAT replacement duplicated or lost multicurrency_total_ht');
+assertSameValue(17.6, $facturableTotals['multicurrency_total_tva'], 'VAT replacement duplicated or lost multicurrency_total_tva');
+assertSameValue(127.6, $facturableTotals['multicurrency_total_ttc'], 'VAT replacement duplicated or lost multicurrency_total_ttc');
 assertSameValue(true, is_object($pdfTechnicalLine), 'VAT replacement removed the technical subtotal line');
 assertSameValue(0.0, $pdfTechnicalLine->total_ht, 'VAT replacement made the technical total_ht facturable');
 assertSameValue(0.0, $pdfTechnicalLine->total_tva, 'VAT replacement made the technical total_tva facturable');
@@ -357,4 +359,105 @@ assertSameValue(0.0, $pdfTechnicalLine->total, 'VAT replacement made the technic
 assertSameValue(0.0, $pdfTechnicalLine->total_ttc, 'VAT replacement made the technical total_ttc facturable');
 assertSameValue(false, property_exists($pdfTechnicalLine, 'TTotal_tva'), 'VAT replacement duplicated VAT on the technical line');
 
-print "OK\n";
+// Reopening and validating must reuse the last manual choice on every supported card.
+$testGlobalStrings = array();
+$testPdfTotals = array(100.0, 20.0, 120.0, array('20.000' => 20.0), 1.0);
+$cards = array(
+	'invoicecard' => array('facture', 'facture'),
+	'invoicesuppliercard' => array('invoice_supplier', 'facture_fournisseur'),
+	'propalcard' => array('propal', 'propal'),
+	'supplier_proposalcard' => array('supplier_proposal', 'supplier_proposal'),
+	'ordercard' => array('commande', 'commande'),
+	'ordersuppliercard' => array('order_supplier', 'commande_fournisseur'),
+);
+$automaticActions = array('modif', 'confirm_modif', 'confirm_edit', 'reopen', 'confirm_validate', 'confirm_valid');
+foreach ($cards as $context => $card) {
+	foreach ($automaticActions as $automaticAction) {
+		$actions = $reflection->newInstanceWithoutConstructor();
+		$technicalLine = createTechnicalLine(41, 0.0, 0.0, 0.0);
+		$object = createPdfObject(array(clone $productLine, $technicalLine));
+		$object->element = $card[0];
+		$testHideInnerLines = 1;
+		$testRequest = array('confirm' => 'yes');
+		$actions->doActions(array('context' => $context), $object, 'builddoc', null);
+		assertSameValue(1, $_SESSION['subtotal_hideInnerLines_'.$card[1]][$object->id], 'Manual choice was not saved');
+
+		$testHideInnerLines = null; // Automatic requests do not contain the checkbox.
+		$actions->doActions(array('context' => $context), $object, $automaticAction, null);
+		$actions->beforePDFCreation(array('i' => 0), $object, $action);
+		assertSameValue(1, count($object->lines), $context.'/'.$automaticAction.' exposed a hidden product');
+		$pdf = new TestPdf();
+		$actions->pdf_add_total($pdf, $object, $object->lines[0], 'Subtotal', '', 10, 10, 100, 4);
+		assertSameValue(true, in_array('100', $pdf->printedValues, true), 'Automatic PDF lost the subtotal amount');
+		assertSameValue(0.0, $technicalLine->total_ht, 'Automatic PDF changed the source subtotal amount');
+	}
+}
+
+// A second document must not inherit the first document's restored option.
+$otherObject = createPdfObject(array(clone $productLine, createTechnicalLine(42, 0.0, 0.0, 0.0)));
+$otherObject->id++;
+$actions->beforePDFCreation(array('i' => 0), $otherObject, $action);
+assertSameValue(2, count($otherObject->lines), 'Restored option leaked into another document');
+$otherObject->id = $object->id;
+$otherObject->element = 'propal';
+$actions->beforePDFCreation(array('i' => 0), $otherObject, $action);
+assertSameValue(2, count($otherObject->lines), 'Restored option leaked into another document type');
+
+// Explicit zero overrides a saved enabled option; an unchecked manual form saves zero.
+$object = createPdfObject(array(clone $productLine, createTechnicalLine(43, 0.0, 0.0, 0.0)));
+$_SESSION['subtotal_hideInnerLines_facture'][$object->id] = 1;
+$testHideInnerLines = 0;
+$actions->doActions(array('context' => 'invoicecard'), $object, 'reopen', null);
+$actions->beforePDFCreation(array('i' => 0), $object, $action);
+assertSameValue(2, count($object->lines), 'Explicit zero was replaced by the saved enabled option');
+$testHideInnerLines = null;
+$actions->doActions(array('context' => 'invoicecard'), $object, 'reopen', null);
+$actions->doActions(array('context' => 'invoicecard'), $object, 'builddoc', null);
+assertSameValue(0, $_SESSION['subtotal_hideInnerLines_facture'][$object->id], 'Unchecked manual form did not save zero');
+$actions->beforePDFCreation(array('i' => 0), $object, $action);
+assertSameValue(2, count($object->lines), 'Unchecked manual form kept an earlier restored option');
+$actions->doActions(array('context' => 'invoicecard'), $object, 'reopen', null);
+$actions->beforePDFCreation(array('i' => 0), $object, $action);
+assertSameValue(2, count($object->lines), 'Saved zero was not preserved during automatic generation');
+
+// Optional native HookManager check: php test/pdf_total_mutation_test.php /path/to/htdocs
+if (isset($argv[1])) {
+	require_once rtrim($argv[1], '/\\').'/core/class/hookmanager.class.php';
+
+	function isModEnabled($module)
+	{
+		return $module === 'testsubtotal';
+	}
+
+	function dol_syslog($message, $level = 0)
+	{
+	}
+
+	class ActionsTestsubtotal extends TestActionsSubtotal
+	{
+		public $warnings = array();
+
+		public function __construct($db)
+		{
+			$this->db = $db;
+		}
+	}
+
+	$conf->modules_parts = array('hooks' => array('testsubtotal' => array('invoicecard', 'pdfgeneration')));
+	$nativeHookManager = new HookManager(null);
+	$nativeHookManager->initHooks(array('invoicecard'));
+	$object = createPdfObject(array(clone $productLine, createTechnicalLine(44, 0.0, 0.0, 0.0)));
+	$_SESSION['subtotal_hideInnerLines_facture'][$object->id] = 1;
+	$action = 'reopen';
+	$nativeHookManager->executeHooks('doActions', array(), $object, $action);
+	$nativeHookManager->initHooks(array('pdfgeneration'));
+	$nativeHookManager->executeHooks('beforePDFCreation', array('i' => 0), $object, $action);
+	assertSameValue(1, count($object->lines), 'Native HookManager lost the restored option after adding PDF context');
+	$otherObject = createPdfObject(array(clone $productLine, createTechnicalLine(45, 0.0, 0.0, 0.0)));
+	$otherObject->id++;
+	$nativeHookManager->executeHooks('beforePDFCreation', array('i' => 0), $otherObject, $action);
+	assertSameValue(2, count($otherObject->lines), 'Native HookManager leaked a previous document option');
+	print "Native HookManager context and successive-call checks passed.\n";
+}
+
+print "OK (PDF totals and 36 automatic-generation scenarios)\n";

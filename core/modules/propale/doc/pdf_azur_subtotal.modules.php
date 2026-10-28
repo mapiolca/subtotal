@@ -28,6 +28,7 @@
 require_once DOL_DOCUMENT_ROOT.'/core/modules/propale/modules_propale.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
+dol_include_once('/subtotal/lib/subtotal_pdf.lib.php');
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/pdf.lib.php';
 
@@ -184,7 +185,10 @@ class pdf_azur_subtotal extends ModelePDFPropales
 				{
 					if (! $arephoto)
 					{
-						$dir = $conf->product->dir_output.'/'.$midir;
+						$productOutputBase = !empty($conf->product->multidir_output[$objphoto->entity])
+							? $conf->product->multidir_output[$objphoto->entity]
+							: $conf->product->dir_output;
+						$dir = $productOutputBase.'/'.$midir;
 
 						foreach ($objphoto->liste_photos($dir,1) as $key => $obj)
 						{
@@ -216,7 +220,8 @@ class pdf_azur_subtotal extends ModelePDFPropales
 
 		if (count($realpatharray) == 0) $this->posxpicture=$this->posxtva;
 
-		if ($conf->propal->dir_output)
+		$outputBase = subtotalPdfGetOutputBase($object, 'propal');
+		if ($outputBase)
 		{
 			$object->fetch_thirdparty();
 			if(!empty($object->client) ){
@@ -227,13 +232,13 @@ class pdf_azur_subtotal extends ModelePDFPropales
 			// Definition of $dir and $file
 			if ($object->specimen)
 			{
-				$dir = $conf->propal->dir_output;
+				$dir = $outputBase;
 				$file = $dir . "/SPECIMEN.pdf";
 			}
 			else
 			{
 				$objectref = dol_sanitizeFileName($object->ref);
-				$dir = $conf->propal->dir_output . "/" . $objectref;
+				$dir = $outputBase . "/" . $objectref;
 				$file = $dir . "/" . $objectref . ".pdf";
 			}
 
@@ -264,7 +269,7 @@ class pdf_azur_subtotal extends ModelePDFPropales
                 $default_font_size = pdf_getPDFFontSize($outputlangs);	// Must be after pdf_getInstance
                 $heightforinfotot = 50;	// Height reserved to output the info and total part
 		        $heightforfreetext= floatval(getDolGlobalString('MAIN_PDF_FREETEXT_HEIGHT', 5));	// Height reserved to output the free text on last page
-	            $heightforfooter = $this->marge_basse + 8;	// Height reserved to output the footer (value include bottom margin)
+	            $heightforfooter = subtotalPdfGetFooterHeight($this->marge_basse);
                 $pdf->SetAutoPageBreak(1,0);
 
                 if (class_exists('TCPDF'))
@@ -276,7 +281,7 @@ class pdf_azur_subtotal extends ModelePDFPropales
                 // Set path to the background PDF File
                 if (!getDolGlobalString('MAIN_DISABLE_FPDI') && getDolGlobalString('MAIN_ADD_PDF_BACKGROUND'))
                 {
-                    $pagecount = $pdf->setSourceFile($conf->mycompany->dir_output.'/' . getDolGlobalString('MAIN_ADD_PDF_BACKGROUND'));
+                    $pagecount = $pdf->setSourceFile(subtotalPdfGetCompanyOutputBase($object->entity).'/' . getDolGlobalString('MAIN_ADD_PDF_BACKGROUND'));
                     $tplidx = $pdf->importPage(1);
                 }
 
@@ -515,7 +520,7 @@ class pdf_azur_subtotal extends ModelePDFPropales
 
 					$pdf->setPage($pageposbefore);
 					$pdf->setTopMargin($this->marge_haute);
-					$pdf->setPageOrientation('', 1, 0);	// The only function to edit the bottom margin of current page to set it.
+					$pdf->setPageOrientation('', 1, $heightforfooter);
 
 					// We suppose that a too long description or photo were moved completely on next page
 					if ($pageposafter > $pageposbefore && empty($showpricebeforepagebreak)) {
@@ -666,7 +671,7 @@ class pdf_azur_subtotal extends ModelePDFPropales
 						$this->_pagefoot($pdf,$object,$outputlangs,1);
 						$pagenb++;
 						$pdf->setPage($pagenb);
-						$pdf->setPageOrientation('', 1, 0);	// The only function to edit the bottom margin of current page to set it.
+						$pdf->setPageOrientation('', 1, $heightforfooter);
 						if (!getDolGlobalString('MAIN_PDF_DONOTREPEAT_HEAD')) $this->_pagehead($pdf, $object, 0, $outputlangs);
 					}
 					if (isset($object->lines[$i+1]->pagebreak) && $object->lines[$i+1]->pagebreak)
