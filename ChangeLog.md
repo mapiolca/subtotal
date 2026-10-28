@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-# 4.0.0 — en préparation
+# 4.0.0 — 2026-10-28
 
 - Sécurisation des actions Ajax : POST, jeton CSRF Dolibarr, liste blanche d’actions, droits natifs, document parent et entité contrôlés.
 - Sécurisation de l’API REST : types autorisés, droits de lecture, contrôle Multicompany et suppression des requêtes SQL construites depuis l’entrée.

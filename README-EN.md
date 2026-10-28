@@ -1,5 +1,7 @@
 # Subtotal 4.0.0
 
+Release date: **2026-10-28**.
+
 Subtotal adds titles, subtitles, free text and subtotal rows to supported Dolibarr proposals, orders, invoices and supplier documents.
 
 Situation invoice rows follow the effective native table column count. A subtotal margin sums each line contribution prorated by that line’s progress in the current situation.
