@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+# 4.0.1 — 2026-10-28
+
+- Correction des dépréciations PHP 8.2+ lors de la découverte des anciens modèles PDF Crabe, Einstein et Azur : propriétés d’options déclarées et option de recherche ODT initialisée pour éviter l’encodage d’une valeur nulle dans l’administration native.
+
 # 4.0.0 — 2026-10-28
 
 - Sécurisation des actions Ajax : POST, jeton CSRF Dolibarr, liste blanche d’actions, droits natifs, document parent et entité contrôlés.

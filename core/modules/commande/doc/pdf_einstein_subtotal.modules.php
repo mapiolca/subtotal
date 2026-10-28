@@ -39,6 +39,11 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/pdf.lib.php';
  */
 class pdf_einstein_subtotal extends ModelePDFCommandes
 {
+	/** @var int Display product/service codes. */
+	public $option_codeproduitservice;
+	/** @var bool Whether the issuer is exempt from VAT. */
+	public $franchise;
+
     var $db;
     var $name;
     var $description;
@@ -72,6 +77,7 @@ class pdf_einstein_subtotal extends ModelePDFCommandes
 
 		$this->db = $db;
 		$this->name = "einstein_subtotal";
+		$this->scandir = '';
 		// J'ajoute l'annotation "déprécié" mais à garder... des fois qu'un client avec une vieille version utilise les modèles PDF custom
 		$this->description = 'Modèle de commande incluant des spécificités du module sous-total. (déprécié)';
 

@@ -1,6 +1,6 @@
-# Subtotal 4.0.0
+# Subtotal 4.0.1
 
-Release date: **2026-10-28**.
+Patch version prepared on **2026-10-28**.
 
 Subtotal adds titles, subtitles, free text and subtotal rows to supported Dolibarr proposals, orders, invoices and supplier documents.
 
