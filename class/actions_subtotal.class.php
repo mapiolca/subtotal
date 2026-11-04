@@ -2689,46 +2689,57 @@ class ActionsSubtotal
 	}
 
 	/**
-	 * Calculate a subtotal margin from the contribution of each product line.
+	 * Calculate a subtotal margin over the same line range as its displayed amount.
 	 *
 	 * On situation invoices, both revenue and cost are prorated with the
 	 * progress represented by each individual line in the current situation.
+	 * Native document lines already carry their resolved buying price in pa_ht.
 	 *
 	 * @param CommonObject     $object Parent document.
 	 * @param CommonObjectLine $subtotalLine Subtotal line.
-	 * @return float
+	 * @return array{cost: float, margin: float, margin_rate: float|string}
 	 */
-	private function getSubtotalMargin($object, $subtotalLine)
+	private function getSubtotalMarginInfos($object, $subtotalLine)
 	{
-		$productCostCache = array();
-		$margin = 0.0;
-		$parentTitleLine = TSubtotal::getParentTitleOfLine($object, $subtotalLine->rang);
-		if (!is_object($parentTitleLine)) {
-			return 0.0;
-		}
+		$productLines = array();
+		$rank = (int) $subtotalLine->rang;
+		$level = TSubtotal::getNiveau($subtotalLine);
+		$parentTitleLine = TSubtotal::getParentTitleOfLine($object, $rank, $level);
 
-		$productLines = TSubtotal::getLinesFromTitleId($object, $parentTitleLine->id);
-		foreach ($productLines as $productLine) {
-			if (TSubtotal::isModSubtotalLine($productLine)) {
+		foreach (array_reverse($object->lines) as $productLine) {
+			if ((int) $productLine->rang >= $rank) {
 				continue;
 			}
-
-			$unitCost = null;
-			if (isset($productLine->pa_ht) && (float) $productLine->pa_ht > 0) {
-				$unitCost = (float) $productLine->pa_ht;
-			} elseif (!empty($productLine->fk_product)) {
-				$productId = (int) $productLine->fk_product;
-				if (!array_key_exists($productId, $productCostCache)) {
-					dol_include_once('/product/class/product.class.php');
-					$product = new Product($this->db);
-					$productCostCache[$productId] = $product->fetch($productId) > 0 ? (float) $product->cost_price : 0.0;
-				}
-				$unitCost = $productCostCache[$productId];
+			if (is_object($parentTitleLine) && $parentTitleLine->id == $productLine->id) {
+				break;
 			}
-			if ($unitCost === null) {
-				$unitCost = 0.0;
+			if (TSubtotal::isModSubtotalLine($productLine) || (int) $productLine->product_type === 9) {
+				continue;
 			}
+			// Native margin resolution may fill missing costs; never mutate the card's lines.
+			$productLines[] = clone $productLine;
+		}
 
+		if (!$this->isSituationInvoice($object)) {
+			if (!class_exists('FormMargin')) {
+				require_once DOL_DOCUMENT_ROOT.'/core/class/html.formmargin.class.php';
+			}
+			$subtotalObject = clone $object;
+			$subtotalObject->lines = $productLines;
+			$formMargin = new FormMargin($this->db);
+			$marginInfos = $formMargin->getMarginInfosArray($subtotalObject);
+			return array(
+				'cost' => (float) price2num($marginInfos['pa_total'], 'MT'),
+				'margin' => (float) price2num($marginInfos['total_margin'], 'MT'),
+				'margin_rate' => $marginInfos['total_margin_rate'],
+			);
+		}
+
+		// Preserve current-period situation margins: older native helpers only prorate mode 1.
+		$margin = 0.0;
+		$totalCost = 0.0;
+		foreach ($productLines as $productLine) {
+			$unitCost = isset($productLine->pa_ht) ? (float) $productLine->pa_ht : 0.0;
 			$quantity = isset($productLine->qty) ? (float) $productLine->qty : 0.0;
 			$cost = $unitCost * $quantity;
 			if ($this->isSituationInvoice($object)) {
@@ -2736,8 +2747,13 @@ class ActionsSubtotal
 			}
 			$lineTotal = isset($productLine->total_ht) ? (float) $productLine->total_ht : 0.0;
 			$margin += $lineTotal - $cost;
+			$totalCost += $cost;
 		}
-		return (float) price2num($margin, 'MT');
+		return array(
+			'cost' => (float) price2num($totalCost, 'MT'),
+			'margin' => (float) price2num($margin, 'MT'),
+			'margin_rate' => $totalCost > 0 ? 100 * $margin / $totalCost : '',
+		);
 	}
 
 	function printObjectLine ($parameters, &$object, &$action, $hookmanager)
@@ -2745,6 +2761,7 @@ class ActionsSubtotal
 		global $conf, $langs, $user, $db, $bc, $usercandelete, $toselect;
 
 		$lineLabel = "";
+		$subtotalSummaryInOneCell = false;
 		$num = &$parameters['num'];
 		$line = &$parameters['line'];
 		$i = &$parameters['i'];
@@ -3084,7 +3101,9 @@ class ActionsSubtotal
                             $colspan = 2;
                         }
 						$displayMarginOnSubtotal = TSubtotal::isSubtotal($line) && getDolGlobalString('DISPLAY_MARGIN_ON_SUBTOTALS');
-						$subtotalMargin = $displayMarginOnSubtotal ? $this->getSubtotalMargin($object, $line) : 0.0;
+						$subtotalMarginInfos = $displayMarginOnSubtotal ? $this->getSubtotalMarginInfos($object, $line) : array('cost' => 0.0, 'margin' => 0.0, 'margin_rate' => '');
+						$subtotalSummaryInOneCell = TSubtotal::isSubtotal($line) && $line->qty > 90;
+						if ($subtotalSummaryInOneCell) $colspan++;
 
 
 
@@ -3118,7 +3137,19 @@ class ActionsSubtotal
 						 $titleStyleBold =  strpos($style, 'B') === false ? '' : ' font-weight:bold;';
 						 $titleStyleUnderline =  strpos($style, 'U') === false ? '' : ' text-decoration: underline;';
 
-						 if (empty($line->label)) {
+						 if (TSubtotal::isSubtotal($line)) {
+							$langs->load('margins');
+							$subtotalTitleLine = TSubtotal::getParentTitleOfLine($object, (int) $line->rang, TSubtotal::getNiveau($line));
+							$subtotalTitle = is_object($subtotalTitleLine) ? TSubtotal::getTitleLabel($subtotalTitleLine) : '';
+							if ($subtotalTitle === '') {
+								$subtotalTitle = !empty($line->label) ? $line->label : $line->description;
+								if (dol_string_nohtmltag($subtotalTitle) === $langs->transnoentities('SubTotal')) {
+									$subtotalTitle = '';
+								}
+							}
+							print '<span class="subtotal_label" style="'.$titleStyleItalic.$titleStyleBold.$titleStyleUnderline.'">';
+							print $langs->trans('SubTotal').' : '.dol_escape_htmltag(dol_string_nohtmltag($subtotalTitle)).'</span>';
+						 } elseif (empty($line->label)) {
 							if ($line->qty >= 91 && $line->qty <= 99 && getDolGlobalString('CONCAT_TITLE_LABEL_IN_SUBTOTAL_LABEL')) print  $line->description.' '.'<span class="subtotal_label" style="'.$titleStyleItalic.$titleStyleBold.$titleStyleUnderline.'" >'.$this->getTitle($object, $line).'</span>';
 							else print  '<span class="subtotal_label" style="'.$titleStyleItalic.$titleStyleBold.$titleStyleUnderline.'" >'.$line->description.'</span>';
 						 }
@@ -3157,22 +3188,32 @@ class ActionsSubtotal
 						}
 
 
-						 if($line->qty>90) print ' : ';
 						 if ($displayMarginOnSubtotal) {
-							print '<span class="subtotal-margin nowraponall marginleftonlyshort">';
-							print '<span class="subtotal_label" style="'.$titleStyleItalic.$titleStyleBold.$titleStyleUnderline.'">'.$langs->trans('Margin').' :</span>';
-							print '&nbsp;'.price($subtotalMargin);
+							print ' | <span class="nowraponall">'.$langs->trans('CostPrice').' : '.price($subtotalMarginInfos['cost']).'</span>';
+							print ' | ';
+							print '<span class="subtotal-margin nowraponall">';
+							print $langs->trans('Margin').' :';
+							print '&nbsp;'.price($subtotalMarginInfos['margin']);
+							if ($subtotalMarginInfos['margin_rate'] !== '') {
+								print ' ('.price($subtotalMarginInfos['margin_rate'], 0, '', 0, 0, 2).'%)';
+							}
 							print '</span>';
+						 }
+						 if ($subtotalSummaryInOneCell) {
+							print ' | <span class="nowraponall" rel="subtotal_total">'.$langs->trans('AmountHT').' : '.price($total_line).'</span>';
 						 }
 						 if($line->info_bits > 0) echo img_picto($langs->trans('Pagebreak'), 'pagebreak@subtotal');
 					}
+					print '</td>';
 			?>
 
 			<?php
 				if($line->qty>90) {
 
 					/* Total */
-					echo '<td class="linecolht nowrap" align="right" style="font-weight:bold;" rel="subtotal_total">'.price($total_line).'</td>';
+					if (!$subtotalSummaryInOneCell) {
+						echo '<td class="linecolht nowrap" align="right" style="font-weight:bold;" rel="subtotal_total">'.$langs->trans('AmountHT').' : '.price($total_line).'</td>';
+					}
 					if (isModEnabled('multicurrency') && ($object->multicurrency_code != $conf->currency)) {
 						echo '<td class="linecoltotalht_currency">&nbsp;</td>';
 					}

@@ -1,5 +1,28 @@
 # Subtotal compliance audit
 
+## Subtotal margin correction — 2026-11-04 (4.0.2)
+
+- Before correction, regression fixtures on local base `27eb9db8165ae902bf8d4051593b4482c74889ae` reproduced a parent subtotal reporting 199 instead of 140 when it closed an open child title, a catalogue lookup replacing an explicit zero line cost, and a subtotal without a title reporting zero instead of 40. These are synthetic documents; the exact cause of the two 247.50 amounts in the reported screenshot is not confirmed without the original quotation and deployed module revision.
+- Margins now select the same title level and preceding line range as `getTotalLineFromObject()`. Ordinary documents call native `FormMargin::getMarginInfosArray()` on cloned document lines, preserving native cost, discount and sign policies without modifying the card's objects. Existing per-line situation progress remains explicit because older native helpers only prorate situation costs in mode 1. No SQL migration or configuration change is needed; historical ID `104777` and family remain unchanged.
+- PHP 8.4.22 regression checks cover independent/nested/open/empty blocks, titleless subtotals, products/services, free text, discounted revenue, zero costs, negative sales, the native missing-cost policy and unchanged source objects. Both margin tests execute the actual native FormMargin source; document fixtures, configuration and `price2num()` are simulated, so this does not validate database lookups, native rounding settings or a full instance. The existing situation test now uses real Subtotal block selection.
+- All eleven repository test scripts passed against local Dolibarr `25.0.0-alpha` sources, including descriptor/PDF discovery, native HookManager checks and 36 automatic-generation scenarios. PHP lint passed for all eight changed/new PHP files; `git diff --check` passed. PHPStan level 5 (`phpstan.neon.dist`) was not run because no executable is installed in the available tooling. No full-instance browser validation, deployment, package installation, remote CI or full Dolibarr/PHP compatibility matrix was executed. The original quotation must still be checked after deployment.
+- The card summary now displays `Subtotal: title | Cost price: value | Margin: value (rate %) | Amount (excl. tax): value` in one cell, using native translations and `price()` formatting. The summary cell spans the former HT cell as well, preserving the effective table column count and action columns. Costs/margins follow the existing display setting. Title selection respects the subtotal level; text is stripped of markup and escaped. Only the title receives the configured underline. Ordinary documents use native `total_margin_rate`; situations use their prorated margin divided by positive prorated cost. Rates with zero or negative cost are omitted, matching the native availability rule; a valid zero rate remains visible.
+- `test/subtotal_summary_test.php` renders the actual hook and checks text order, rates, costs, escaping, the common cell and its colspan with margins, quantity and multicurrency enabled/disabled. An internal-browser fixture was visually checked at 1280 px and 400 px with long titles; margin and HT now wrap within the same cell, without the former gap between cells. Page context, price formatting and surrounding CSS were simulated; this is not a deployed Dolibarr card or theme validation. Margin regressions also cover positive, zero, negative and undefined rates, plus the prorated situation rate.
+
+Native margin helper sources executed locally (not full instance tests):
+
+| Dolibarr source | Commit | Both margin regressions |
+|---|---|---|
+| 16.0.0 (historical baseline) | `ad673b3207506de03ee8e745399e3a19505900d2` | Passed |
+| 20.0.0 | `697bf01970740a3339cd99cf055b4428fc5e051c` | Passed |
+| 21.0.0 | `fd970b582a4d8c5779a2958a4e9f4fce225cf085` | Passed |
+| 22.0.0 | `49b9a6d19f3deb6d410c0e9b3310e95be4ea7710` | Passed |
+| 23.0.0 | `57a1f05d490a7a80944a8232e9c613e6556d2704` | Passed |
+| 24.0.0 | `769c7db907099643558e77d7002c109cfda919e5` | Passed |
+| 25.0.0-alpha (local development checkout) | `0ac96524bf68b063a44d6af8137e05bf11c227c8` | Passed |
+
+The executed symbol is `FormMargin::getMarginInfosArray()` in `htdocs/core/class/html.formmargin.class.php`, for example [the pinned v20 implementation](https://github.com/Dolibarr/dolibarr/blob/697bf01970740a3339cd99cf055b4428fc5e051c/htdocs/core/class/html.formmargin.class.php). This proves neither its first appearance nor compatibility with a future final v25 release. The About page reads the descriptor version directly and needs no duplicate version edit.
+
 ## Decisions applied in 4.0.0
 
 - The family is `ATM Consulting x Les Métiers du Bâtiment`.
