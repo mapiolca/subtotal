@@ -5,7 +5,8 @@
 ### Dictionary layout refinement — 2026-11-04
 
 - Applied the requested trailing action column: Label, Content, Status, then edit/delete. Search/reset commands share the trailing column. Native dictionary classes center the status and action cells and space the edit/delete pictograms; no CSS reordering or global list preference change.
-- Fragment assertions check the column order, trailing search/actions, pagination form and empty-row span with both values of the list checkbox-position preference. PHP lint and native-helper fixture generation pass. Instance verification is recorded after deployment.
+- Fragment assertions check the column order, trailing search/actions, pagination form and empty-row span with both values of the list checkbox-position preference. PHP lint, static compliance, native-helper fixture generation and the 31 controller scenarios pass.
+- Functional commit `89d5945ed675e95943276ed9a8a1f0c369c11258` was deployed through native cPanel Git Version Control, with the exact HEAD confirmed. The actual dialog on the test instance (Dolibarr 25.0.0-alpha) showed the requested order and trailing controls. Search, native empty state, reset, edit loading, cancellation and return to the insertion dialog passed; no dictionary or document content was saved. The initial disabled state and identical settings were restored. This focused layout check does not repeat the full prior acceptance or validate other core versions.
 
 ### Authorized test-instance acceptance — 2026-11-04
 
