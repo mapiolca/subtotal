@@ -1,6 +1,6 @@
 # Subtotal 4.0.2
 
-Version corrective en préparation depuis le **2026-11-04**, non publiée.
+Version corrective du **2026-11-04**, consacrée au calcul et à l’affichage des marges de sous-totaux.
 
 Subtotal ajoute des titres, sous-titres, textes libres et sous-totaux aux propositions commerciales, commandes, factures et documents fournisseurs pris en charge par Dolibarr.
 

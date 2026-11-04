@@ -1,6 +1,6 @@
 # Subtotal 4.0.2
 
-Patch version in preparation since **2026-11-04**, not published.
+Patch version dated **2026-11-04**, limited to the subtotal margin calculation and display correction.
 
 Subtotal adds titles, subtitles, free text and subtotal rows to supported Dolibarr proposals, orders, invoices and supplier documents.
 

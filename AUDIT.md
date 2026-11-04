@@ -1,6 +1,6 @@
 # Subtotal compliance audit
 
-## Subtotal margin correction prepared on 2026-11-04 (4.0.2, unpublished)
+## Subtotal margin correction — 2026-11-04 (4.0.2)
 
 - Before correction, regression fixtures on local base `27eb9db8165ae902bf8d4051593b4482c74889ae` reproduced a parent subtotal reporting 199 instead of 140 when it closed an open child title, a catalogue lookup replacing an explicit zero line cost, and a subtotal without a title reporting zero instead of 40. These are synthetic documents; the exact cause of the two 247.50 amounts in the reported screenshot is not confirmed without the original quotation and deployed module revision.
 - Margins now select the same title level and preceding line range as `getTotalLineFromObject()`. Ordinary documents call native `FormMargin::getMarginInfosArray()` on cloned document lines, preserving native cost, discount and sign policies without modifying the card's objects. Existing per-line situation progress remains explicit because older native helpers only prorate situation costs in mode 1. No SQL migration or configuration change is needed; historical ID `104777` and family remain unchanged.

@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-# 4.0.2 — En préparation
+# 4.0.2 — 2026-11-04
 
 - Correction des marges de sous-totaux : utilisation du calcul natif Dolibarr et des coûts du document sur les devis, commandes et factures ordinaires, sans remplacement d’un coût nul par le coût actuel du catalogue.
 - Alignement du périmètre des marges sur le montant HT du sous-total, notamment lorsqu’un sous-total parent ferme un sous-titre resté ouvert ; conservation du prorata par ligne des factures de situation.
