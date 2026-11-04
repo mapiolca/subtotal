@@ -347,7 +347,7 @@ class ActionsSubtotal
 		}
 		$freeTextConfig = array('url' => dol_buildpath('/subtotal/script/freetext.php', 1), 'element' => $object->element,
 			'elementid' => (int) $object->id, 'token' => currentToken(), 'canManage' => $canManageFreeText, 'labels' => $freeTextLabels);
-		$freeTextButton = $canManageFreeText ? dolGetButtonTitle('', $langs->trans('SubtotalFreeTextManage'), 'fa fa-plus-circle', '#', 'subtotal-manage-freetext') : '';
+		$freeTextButton = $canManageFreeText ? '<a href="#" id="subtotal-manage-freetext" title="'.dol_escape_htmltag($langs->transnoentities('SubtotalFreeTextManage')).'" aria-label="'.dol_escape_htmltag($langs->transnoentities('SubtotalFreeTextManage')).'"><span class="fa fa-plus-circle valignmiddle paddingleft" aria-hidden="true"></span></a>' : '';
 		print '<script src="'.dol_buildpath('/subtotal/js/freetext.js', 1).'"></script>';
 
 		$jsData = array(

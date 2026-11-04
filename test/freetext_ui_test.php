@@ -67,7 +67,7 @@ foreach ($xpath->query('//tr[contains(@class,"liste_titre") and not(contains(@cl
 	}
 }
 $object = (object) array('element' => 'propal', 'id' => 1, 'lines' => array((object) array('id' => 1, 'rang' => 1, 'qty' => 1, 'product_type' => 9, 'special_code' => 104777, 'label' => str_repeat('Titre très long ', 20), 'desc' => '')));
-$selectors = getHtmlSelectTitle($object, true).'<br><br>'.getHtmlSelectFreeText().' '.dolGetButtonTitle('', $langs->trans('SubtotalFreeTextManage'), 'fa fa-plus-circle', '#', 'subtotal-manage-freetext').' '.$langs->trans('subtotalFreeTextOrDesc');
+$selectors = getHtmlSelectTitle($object, true).'<br><br>'.getHtmlSelectFreeText().' <a href="#" id="subtotal-manage-freetext" title="'.dol_escape_htmltag($langs->transnoentities('SubtotalFreeTextManage')).'" aria-label="'.dol_escape_htmltag($langs->transnoentities('SubtotalFreeTextManage')).'"><span class="fa fa-plus-circle valignmiddle paddingleft" aria-hidden="true"></span></a> '.$langs->trans('subtotalFreeTextOrDesc');
 $conf->use_javascript_ajax = 0;
 $fallbackSelector = getHtmlSelectFreeText();
 $conf->use_javascript_ajax = 1;
