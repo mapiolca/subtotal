@@ -1,6 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+# 4.0.2 — En préparation
+
+- Correction des marges de sous-totaux : utilisation du calcul natif Dolibarr et des coûts du document sur les devis, commandes et factures ordinaires, sans remplacement d’un coût nul par le coût actuel du catalogue.
+- Alignement du périmètre des marges sur le montant HT du sous-total, notamment lorsqu’un sous-total parent ferme un sous-titre resté ouvert ; conservation du prorata par ligne des factures de situation.
+- Présentation explicite sur les fiches : « Sous-total : titre | Prix de revient : valeur | Marge : valeur | Montant HT : valeur », avec les coûts et marges soumis au réglage d’affichage existant.
+
 # 4.0.1 — 2026-10-28
 
 - Correction des dépréciations PHP 8.2+ lors de la découverte des anciens modèles PDF Crabe, Einstein et Azur : propriétés d’options déclarées et option de recherche ODT initialisée pour éviter l’encodage d’une valeur nulle dans l’administration native.

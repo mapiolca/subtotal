@@ -1,10 +1,14 @@
-# Subtotal 4.0.1
+# Subtotal 4.0.2
 
-Patch version prepared on **2026-10-28**.
+Patch version in preparation since **2026-11-04**, not published.
 
 Subtotal adds titles, subtitles, free text and subtotal rows to supported Dolibarr proposals, orders, invoices and supplier documents.
 
 Situation invoice rows follow the effective native table column count. A subtotal margin sums each line contribution prorated by that line’s progress in the current situation.
+
+On proposals, orders and regular invoices, subtotal margins use Dolibarr's native calculation on the relevant block lines. Document buying prices, including zero, take precedence over current catalogue costs. Nested blocks use the same line range as the subtotal amount excluding tax.
+
+Card rows explicitly label **Subtotal: title | Cost price: value | Margin: value | Amount (excl. tax): value** in this order. The title matches the subtotal level. Costs and margins follow the existing display setting; the amount stays in its native column.
 
 ## Compatibility
 

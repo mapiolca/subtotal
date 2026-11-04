@@ -1,6 +1,6 @@
-# Subtotal 4.0.1
+# Subtotal 4.0.2
 
-Version corrective préparée le **2026-10-28**.
+Version corrective en préparation depuis le **2026-11-04**, non publiée.
 
 Subtotal ajoute des titres, sous-titres, textes libres et sous-totaux aux propositions commerciales, commandes, factures et documents fournisseurs pris en charge par Dolibarr.
 
@@ -16,6 +16,10 @@ Subtotal ajoute des titres, sous-titres, textes libres et sous-totaux aux propos
 - API REST de lecture des sous-totaux.
 
 Pour les factures de situation, le rendu des titres, textes libres et sous-totaux suit le nombre réel de colonnes de la table Dolibarr. La marge d’un sous-total additionne la contribution de chaque ligne au prorata de son avancement dans la situation courante.
+
+Sur les devis, commandes et factures ordinaires, la marge du sous-total utilise le calcul natif Dolibarr sur les lignes du bloc concerné. Les coûts portés par le document, y compris zéro, restent prioritaires sur le coût actuel du catalogue. Les blocs imbriqués suivent le même périmètre que le montant HT du sous-total.
+
+Sur les fiches, les valeurs sont libellées dans cet ordre : **Sous-total : titre | Prix de revient : valeur | Marge : valeur | Montant HT : valeur**. Le titre correspond au niveau du sous-total. Le prix de revient et la marge apparaissent lorsque leur affichage est activé ; le montant HT conserve sa colonne native.
 
 Le sélecteur de titre permet d’insérer une ligne directement après un titre ou en fin de section selon le réglage choisi. En fin de section, une section sans sous-total se termine au titre suivant de niveau égal ou supérieur. Les libellés longs restent consultables dans un sélecteur de largeur bornée.
 
