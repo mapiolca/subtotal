@@ -42,13 +42,12 @@ function subtotalFreeTextForm($entry)
  */
 function subtotalFreeTextList($data, array $query)
 {
-	global $langs, $db, $conf;
+	global $langs, $db;
 	require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 	require_once DOL_DOCUMENT_ROOT.'/core/lib/ajax.lib.php';
 	$form = new Form($db);
 	$url = dol_buildpath('/subtotal/script/freetext.php', 1);
 	$param = '&view=list&element='.urlencode($query['element']).'&elementid='.$query['elementid'].'&search_label='.urlencode($query['search']).'&limit='.$query['limit'];
-	$left = !empty($conf->main_checkbox_left_column);
 	ob_start();
 	print '<form class="subtotal-freetext-search" method="GET" action="'.$url.'">';
 	print '<input type="hidden" name="view" value="list">';
@@ -58,24 +57,21 @@ function subtotalFreeTextList($data, array $query)
 	$hasNext = ($query['page'] + 1) * $query['limit'] < $data['total'];
 	print_barre_liste($langs->trans('SubtotalFreeTextManage'), $query['page'], $url, $param, $query['sortfield'], $query['sortorder'], '', count($data['rows']) + ($hasNext ? 1 : 0), $data['total'], 'list', 0, $newbutton, '', $query['limit']);
 	print '<div class="div-table-responsive-no-min"><table class="noborder centpercent">';
-	$searchButtons = '<td class="'.($left ? 'left' : 'right').'">'.$form->showFilterButtons($left ? 'left' : '').'</td>';
-	print '<tr class="liste_titre_filter">'.($left ? $searchButtons : '').'<td><input name="search_label" class="flat maxwidth200" value="'.dol_escape_htmltag($query['search']).'" aria-label="'.dol_escape_htmltag($langs->transnoentities('Label')).'"></td><td colspan="2"></td>'.($left ? '' : $searchButtons).'</tr>';
+	print '<tr class="liste_titre_filter"><td><input name="search_label" class="flat maxwidth200" value="'.dol_escape_htmltag($query['search']).'" aria-label="'.dol_escape_htmltag($langs->transnoentities('Label')).'"></td><td></td><td></td>';
+	print '<td class="liste_titre center maxwidthsearch">'.$form->showFilterButtons().'</td></tr>';
 	print '<tr class="liste_titre">';
-	if ($left) print '<th class="left">'.$langs->trans('Actions').'</th>';
 	print_liste_field_titre('Label', $url, 'label', '', $param, '', $query['sortfield'], $query['sortorder']);
-	print '<th>'.$langs->trans('Description').'</th>';
-	print_liste_field_titre('Active', $url, 'active', '', $param, '', $query['sortfield'], $query['sortorder']);
-	print ($left ? '' : '<th class="right">'.$langs->trans('Actions').'</th>').'</tr>';
+	print '<th>'.$langs->trans('Content').'</th>';
+	print_liste_field_titre('Status', $url, 'active', '', $param, '', $query['sortfield'], $query['sortorder'], 'center ');
+	print '<th class="center maxwidthsearch">'.$langs->trans('Actions').'</th></tr>';
 	foreach ($data['rows'] as $row) {
 		print '<tr class="oddeven" data-id="'.$row['id'].'" data-signature="'.$row['signature'].'">';
-		$actions = '<td class="'.($left ? 'left' : 'right').' nowrap"><a href="#" class="subtotal-freetext-edit" title="'.dol_escape_htmltag($langs->transnoentities('Modify')).'">'.img_edit().'</a> '
-			.'<a href="#" class="subtotal-freetext-delete" title="'.dol_escape_htmltag($langs->transnoentities('Delete')).'">'.img_delete().'</a></td>';
-		if ($left) print $actions;
 		print '<td>'.dol_escape_htmltag($row['label']).'</td><td>'.dol_escape_htmltag(dol_trunc(dol_string_nohtmltag($row['content']), 160)).'</td>';
-		print '<td><span tabindex="0" class="subtotal-freetext-toggle" role="switch" aria-checked="'.($row['active'] ? 'true' : 'false').'" aria-label="'.dol_escape_htmltag($langs->transnoentities('Active')).'">';
+		print '<td class="nowraponall center"><span tabindex="0" class="subtotal-freetext-toggle" role="switch" aria-checked="'.($row['active'] ? 'true' : 'false').'" aria-label="'.dol_escape_htmltag($langs->transnoentities('Active')).'">';
 		print img_picto($langs->trans($row['active'] ? 'Enabled' : 'Disabled'), $row['active'] ? 'switch_on' : 'switch_off').'</span> ';
 		print dolGetStatus($langs->trans($row['active'] ? 'Enabled' : 'Disabled'), '', '', $row['active'] ? 'status4' : 'status8', 5).'</td>';
-		print ($left ? '' : $actions).'</tr>';
+		print '<td class="center maxwidthsearch nowraponall"><a href="#" class="reposition marginleftonly paddingleft marginrightonly paddingright editfielda subtotal-freetext-edit" title="'.dol_escape_htmltag($langs->transnoentities('Modify')).'">'.img_edit().'</a>';
+		print '<a href="#" class="reposition marginleftonly paddingleft marginrightonly paddingright subtotal-freetext-delete" title="'.dol_escape_htmltag($langs->transnoentities('Delete')).'">'.img_delete().'</a></td></tr>';
 	}
 	if (!$data['rows']) print '<tr class="oddeven"><td colspan="4"><span class="opacitymedium">'.$langs->trans('NoRecordFound').'</span></td></tr>';
 	print '</table></div></form>';

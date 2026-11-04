@@ -52,8 +52,19 @@ $document->loadHTML('<meta charset="utf-8">'.$list.$leftList);
 $xpath = new DOMXPath($document);
 if ($xpath->query('//select[@id="limit"]/ancestor::form')->length !== 2 || $xpath->query('//input[@type="hidden" and @name="limit"]')->length !== 0
 	|| $xpath->query('(//form)[1]//tr[contains(@class,"liste_titre_filter")]/td[last()]//button')->length !== 2
-	|| $xpath->query('(//form)[2]//tr[contains(@class,"liste_titre_filter")]/td[1]//button')->length !== 2) {
+	|| $xpath->query('(//form)[2]//tr[contains(@class,"liste_titre_filter")]/td[last()]//button')->length !== 2
+	|| $xpath->query('//tr[@data-id]/td[last()]//a[contains(@class,"subtotal-freetext-edit")]')->length !== 2
+	|| $xpath->query('//tr[@data-id]/td[last()]//a[contains(@class,"subtotal-freetext-delete")]')->length !== 2
+	|| $xpath->query('//tr[@data-id]/td[1]//a')->length !== 0
+	|| $xpath->query('//tr[contains(@class,"liste_titre") and not(contains(@class,"liste_titre_filter"))]/*[last()][normalize-space(.)="Actions"]')->length !== 2) {
 	throw new RuntimeException('Native pagination form contract changed');
+}
+foreach ($xpath->query('//tr[contains(@class,"liste_titre") and not(contains(@class,"liste_titre_filter"))]') as $header) {
+	$titles = array();
+	foreach ($header->childNodes as $cell) if ($cell instanceof DOMElement) $titles[] = trim($cell->textContent);
+	if ($titles !== array($langs->trans('Label'), $langs->trans('Content'), $langs->trans('Status'), $langs->trans('Actions'))) {
+		throw new RuntimeException('Dictionary column order changed');
+	}
 }
 $object = (object) array('element' => 'propal', 'id' => 1, 'lines' => array((object) array('id' => 1, 'rang' => 1, 'qty' => 1, 'product_type' => 9, 'special_code' => 104777, 'label' => str_repeat('Titre très long ', 20), 'desc' => '')));
 $selectors = getHtmlSelectTitle($object, true).'<br><br>'.getHtmlSelectFreeText().' '.dolGetButtonTitle('', $langs->trans('SubtotalFreeTextManage'), 'fa fa-plus-circle', '#', 'subtotal-manage-freetext').' '.$langs->trans('subtotalFreeTextOrDesc');

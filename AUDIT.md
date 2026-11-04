@@ -2,6 +2,11 @@
 
 ## Predefined text management — 2026-11-04 (4.1.0)
 
+### Dictionary layout refinement — 2026-11-04
+
+- Applied the requested trailing action column: Label, Content, Status, then edit/delete. Search/reset commands share the trailing column. Native dictionary classes center the status and action cells and space the edit/delete pictograms; no CSS reordering or global list preference change.
+- Fragment assertions check the column order, trailing search/actions, pagination form and empty-row span with both values of the list checkbox-position preference. PHP lint and native-helper fixture generation pass. Instance verification is recorded after deployment.
+
 ### Authorized test-instance acceptance — 2026-11-04
 
 - The PR branch was deployed through native cPanel Git Version Control. The native About page and module list confirmed 4.1.0. No terminal deployment, production operation, PR merge or release.
