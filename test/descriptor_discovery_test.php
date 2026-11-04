@@ -38,8 +38,12 @@ $langs = new DescriptorTestTranslations();
 $conf = (object) array('entity' => 1);
 require_once __DIR__.'/../core/modules/modSubtotal.class.php';
 $descriptor = new modSubtotal(null);
-if ($descriptor->version !== '4.0.2' || $descriptor->menu !== array()) {
+if ($descriptor->version !== '4.1.0' || $descriptor->menu !== array()) {
 	throw new RuntimeException('Unexpected descriptor version or native menu declaration.');
+}
+if (count($descriptor->rights) !== 1 || $descriptor->rights[1][0] !== 10477701
+	|| $descriptor->rights[1][3] !== 0 || $descriptor->rights[1][4] !== 'freetext' || $descriptor->rights[1][5] !== 'manage') {
+	throw new RuntimeException('Dictionary permission must have a stable ID and no default grant.');
 }
 restore_error_handler();
 print 'OK: native descriptor discovery without PHP deprecations on PHP '.PHP_VERSION.".\n";

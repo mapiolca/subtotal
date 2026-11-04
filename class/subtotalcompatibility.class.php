@@ -51,8 +51,24 @@ class SubtotalCompatibility
 	{
 		$baseAvailable = self::isDolibarrVersionAtLeast(self::MIN_DOLIBARR_VERSION)
 			&& self::isPhpVersionAtLeast(self::MIN_PHP_VERSION);
+		$richEditorAvailable = $baseAvailable && isModEnabled('fckeditor') && getDolGlobalInt('FCKEDITOR_ENABLE_DETAILS') > 0
+			&& getDolGlobalString('FCKEDITOR_EDITORNAME', 'ckeditor') === 'ckeditor';
 
 		return array(
+			'freetext_html_editor' => array(
+				'label' => 'CompatibilityFeatureFreeTextEditor', 'description' => 'CompatibilityFeatureFreeTextEditorDescription',
+				'min_dolibarr' => self::MIN_DOLIBARR_VERSION, 'core_available_from' => self::MIN_DOLIBARR_VERSION,
+				'module_available_from' => self::MIN_DOLIBARR_VERSION, 'min_php' => self::MIN_PHP_VERSION,
+				'compatibility_check' => "isModEnabled('fckeditor') && getDolGlobalInt('FCKEDITOR_ENABLE_DETAILS') > 0 && getDolGlobalString('FCKEDITOR_EDITORNAME', 'ckeditor') === 'ckeditor'",
+				'available' => $richEditorAvailable, 'reason' => $richEditorAvailable ? '' : 'CompatibilityReasonFreeTextEditor',
+			),
+			'freetext_manager' => self::feature(
+				'CompatibilityFeatureFreeText',
+				'CompatibilityFeatureFreeTextDescription',
+				'16.0.0',
+				"version_compare(DOL_VERSION, '16.0.0', '>=')",
+				$baseAvailable
+			),
 			'commercial_document_hooks' => self::feature(
 				'CompatibilityFeatureDocumentHooks',
 				'CompatibilityFeatureDocumentHooksDescription',
