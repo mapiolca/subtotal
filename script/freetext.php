@@ -23,6 +23,8 @@ $response->newToken = currentToken(); // Ajax keeps the current token, including
 
 if (!isModEnabled('subtotal')) subtotalFreeTextError('ModuleNotEnabled', 503);
 if (!getDolGlobalInt('SUBTOTAL_ALLOW_ADD_BLOCK')) subtotalFreeTextError('NotEnoughPermissions', 403);
+// main.inc.php cancels an invalid-token action and exposes this native error marker.
+if (GETPOST('errorcode', 'aZ09') === 'InvalidToken') subtotalFreeTextError('ErrorBadToken', 403);
 $action = GETPOST('action', 'aZ09');
 $view = GETPOST('view', 'aZ09');
 if (!in_array($action, array('', 'create', 'update', 'toggle', 'delete', 'insert'), true)
