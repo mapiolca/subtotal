@@ -18,7 +18,7 @@ function getDolGlobalString($key, $default = '')
 }
 function GETPOST($key, $type = '') { return ''; }
 function newToken() { return 'test-token'; }
-function isModEnabled($module) { return false; }
+function isModEnabled($module) { return $module === 'multicurrency' && !empty($GLOBALS['summaryTestCurrency']); }
 function price($amount) { return (string) $amount; }
 function dol_escape_htmltag($text) { return htmlspecialchars($text, ENT_QUOTES, 'UTF-8'); }
 function dol_htmlentities($text, $flags = ENT_QUOTES) { return htmlspecialchars((string) $text, $flags, 'UTF-8'); }
@@ -53,7 +53,7 @@ class SummaryTestTranslations
 $langs = new SummaryTestTranslations();
 $langs->load('main');
 $conf->global->SUBTOTAL_USE_NEW_FORMAT = 1;
-$conf->global->SUBTOTAL_TITLE_STYLE = 'B';
+$conf->global->SUBTOTAL_TITLE_STYLE = 'BU';
 $conf->currency = 'EUR';
 $conf->browser = (object) array('phone' => false);
 $user = new stdClass();
@@ -61,10 +61,20 @@ $hookmanager = new SummaryTestHooks();
 $action = '';
 $html = '';
 
-foreach (array(true, false) as $withMargin) {
+$layouts = array(
+	array(false, false, true), array(false, false, false),
+	array(true, false, true), array(true, false, false),
+	array(false, true, true), array(false, true, false),
+	array(true, true, true), array(true, true, false),
+);
+foreach ($layouts as $layout) {
+	$withMargin = $layout[2];
+	$summaryTestCurrency = $layout[1];
+	$conf->global->SUBTOTAL_DEFAULT_DISPLAY_QTY_FOR_SUBTOTAL_ON_ELEMENTS = $layout[0] ? 'propal' : '';
 	$conf->global->DISPLAY_MARGIN_ON_SUBTOTALS = $withMargin ? 1 : 0;
 	$document = new MarginTestDocument();
 	$document->element = 'propal';
+	$document->multicurrency_code = 'USD';
 	$document->lines = $cases['two independent blocks'][0];
 	$document->lines[0]->label = 'Lot <b>A</b> & "électricité"';
 	$document->lines[3]->label = str_repeat('Titre long de section ', 10);
@@ -79,12 +89,19 @@ foreach (array(true, false) as $withMargin) {
 	libxml_use_internal_errors(true);
 	$dom->loadHTML('<?xml encoding="UTF-8"><table>'.$rows.'</table>');
 	$xpath = new DOMXPath($dom);
-	$text = preg_replace('/\s+/u', ' ', str_replace("\xc2\xa0", ' ', $xpath->query('//tr')->item(0)->textContent));
-	$expected = 'Sous-total : Lot A & "électricité" | '.($withMargin ? 'Prix de revient : 9389 | Marge : 4694.5 | ' : '').'Montant HT : 14083.5';
-	if (trim($text) !== $expected || $xpath->query('//tr[1]/td')->length !== 5 || $xpath->query('//b')->length !== 0) {
+	$summaryCell = $xpath->query('//tr[1]/td[contains(@class,"subtotal-main-label-cell")]')->item(0);
+	$text = preg_replace('/\s+/u', ' ', str_replace("\xc2\xa0", ' ', $summaryCell->textContent));
+	$expected = 'Sous-total : Lot A & "électricité" | '.($withMargin ? 'Prix de revient : 9389 | Marge : 4694.5 (50%) | ' : '').'Montant HT : 14083.5';
+	if (trim($text) !== $expected || $xpath->query('//tr[1]/td')->length !== 4 + (int) $layout[0] + (int) $layout[1]
+		|| (int) $summaryCell->getAttribute('colspan') !== ($layout[0] ? 3 : 7 + (int) $layout[1])
+		|| $xpath->query('//tr[1]/td[contains(@class,"subtotal-main-label-cell")]//span[@rel="subtotal_total"]')->length !== 1
+		|| $xpath->query('//span[contains(@class,"subtotal-margin")]//*[@style or contains(@class,"subtotal_label")]')->length !== 0
+		|| $xpath->query('//b')->length !== 0) {
 		throw new RuntimeException('Unexpected subtotal summary: '.$text);
 	}
-	$html .= '<h2>'.($withMargin ? 'Marges affichées' : 'Marges masquées').'</h2><div style="overflow:auto"><table style="width:100%">'.$rows.'</table></div>';
+	if (!$layout[0] && !$layout[1]) {
+		$html .= '<h2>'.($withMargin ? 'Marges affichées' : 'Marges masquées').'</h2><div style="overflow:auto"><table style="width:100%">'.$rows.'</table></div>';
+	}
 }
 
 if (in_array('--html', $argv, true)) {

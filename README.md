@@ -19,7 +19,7 @@ Pour les factures de situation, le rendu des titres, textes libres et sous-totau
 
 Sur les devis, commandes et factures ordinaires, la marge du sous-total utilise le calcul natif Dolibarr sur les lignes du bloc concerné. Les coûts portés par le document, y compris zéro, restent prioritaires sur le coût actuel du catalogue. Les blocs imbriqués suivent le même périmètre que le montant HT du sous-total.
 
-Sur les fiches, les valeurs sont libellées dans cet ordre : **Sous-total : titre | Prix de revient : valeur | Marge : valeur | Montant HT : valeur**. Le titre correspond au niveau du sous-total. Le prix de revient et la marge apparaissent lorsque leur affichage est activé ; le montant HT conserve sa colonne native.
+Sur les fiches, le récapitulatif est regroupé dans une seule cellule : **Sous-total : titre | Prix de revient : valeur | Marge : valeur (taux %) | Montant HT : valeur**. Le titre correspond au niveau du sous-total. Le prix de revient et la marge apparaissent lorsque leur affichage est activé. Le taux de marge est calculé sur le prix de revient ; il n’est pas affiché lorsque ce coût est nul ou négatif. Le soulignage du titre ne s’applique pas à la marge.
 
 Le sélecteur de titre permet d’insérer une ligne directement après un titre ou en fin de section selon le réglage choisi. En fin de section, une section sans sous-total se termine au titre suivant de niveau égal ou supérieur. Les libellés longs restent consultables dans un sélecteur de largeur bornée.
 

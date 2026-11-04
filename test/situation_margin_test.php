@@ -91,6 +91,10 @@ assertSameValue(
 	'Each situation line must contribute its individually prorated margin'
 );
 assertSameValue(275.0, $marginMethod->invoke($actions, $invoice, $subtotalLine)['cost'], 'Situation cost must use each line progress');
+$situationRate = $marginMethod->invoke($actions, $invoice, $subtotalLine)['margin_rate'];
+if (abs($situationRate - 38.181818181818) > 0.000001) {
+	throw new RuntimeException('Situation margin rate must use the prorated buying cost');
+}
 
 // A regular invoice keeps the full cost of every line.
 $invoice->type = 0;

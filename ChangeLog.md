@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 
 - Correction des marges de sous-totaux : utilisation du calcul natif Dolibarr et des coûts du document sur les devis, commandes et factures ordinaires, sans remplacement d’un coût nul par le coût actuel du catalogue.
 - Alignement du périmètre des marges sur le montant HT du sous-total, notamment lorsqu’un sous-total parent ferme un sous-titre resté ouvert ; conservation du prorata par ligne des factures de situation.
-- Présentation explicite sur les fiches : « Sous-total : titre | Prix de revient : valeur | Marge : valeur | Montant HT : valeur », avec les coûts et marges soumis au réglage d’affichage existant.
+- Récapitulatif des fiches regroupé dans une seule cellule : « Sous-total : titre | Prix de revient : valeur | Marge : valeur (taux %) | Montant HT : valeur », avec séparateurs réguliers, marge non soulignée et coûts/marges soumis au réglage d’affichage existant.
 
 # 4.0.1 — 2026-10-28
 

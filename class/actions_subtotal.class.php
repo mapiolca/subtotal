@@ -2697,7 +2697,7 @@ class ActionsSubtotal
 	 *
 	 * @param CommonObject     $object Parent document.
 	 * @param CommonObjectLine $subtotalLine Subtotal line.
-	 * @return array{cost: float, margin: float}
+	 * @return array{cost: float, margin: float, margin_rate: float|string}
 	 */
 	private function getSubtotalMarginInfos($object, $subtotalLine)
 	{
@@ -2731,6 +2731,7 @@ class ActionsSubtotal
 			return array(
 				'cost' => (float) price2num($marginInfos['pa_total'], 'MT'),
 				'margin' => (float) price2num($marginInfos['total_margin'], 'MT'),
+				'margin_rate' => $marginInfos['total_margin_rate'],
 			);
 		}
 
@@ -2748,7 +2749,11 @@ class ActionsSubtotal
 			$margin += $lineTotal - $cost;
 			$totalCost += $cost;
 		}
-		return array('cost' => (float) price2num($totalCost, 'MT'), 'margin' => (float) price2num($margin, 'MT'));
+		return array(
+			'cost' => (float) price2num($totalCost, 'MT'),
+			'margin' => (float) price2num($margin, 'MT'),
+			'margin_rate' => $totalCost > 0 ? 100 * $margin / $totalCost : '',
+		);
 	}
 
 	function printObjectLine ($parameters, &$object, &$action, $hookmanager)
@@ -2756,6 +2761,7 @@ class ActionsSubtotal
 		global $conf, $langs, $user, $db, $bc, $usercandelete, $toselect;
 
 		$lineLabel = "";
+		$subtotalSummaryInOneCell = false;
 		$num = &$parameters['num'];
 		$line = &$parameters['line'];
 		$i = &$parameters['i'];
@@ -3095,7 +3101,9 @@ class ActionsSubtotal
                             $colspan = 2;
                         }
 						$displayMarginOnSubtotal = TSubtotal::isSubtotal($line) && getDolGlobalString('DISPLAY_MARGIN_ON_SUBTOTALS');
-						$subtotalMarginInfos = $displayMarginOnSubtotal ? $this->getSubtotalMarginInfos($object, $line) : array('cost' => 0.0, 'margin' => 0.0);
+						$subtotalMarginInfos = $displayMarginOnSubtotal ? $this->getSubtotalMarginInfos($object, $line) : array('cost' => 0.0, 'margin' => 0.0, 'margin_rate' => '');
+						$subtotalSummaryInOneCell = TSubtotal::isSubtotal($line) && $line->qty > 90;
+						if ($subtotalSummaryInOneCell) $colspan++;
 
 
 
@@ -3183,21 +3191,29 @@ class ActionsSubtotal
 						 if ($displayMarginOnSubtotal) {
 							print ' | <span class="nowraponall">'.$langs->trans('CostPrice').' : '.price($subtotalMarginInfos['cost']).'</span>';
 							print ' | ';
-							print '<span class="subtotal-margin nowraponall marginleftonlyshort">';
-							print '<span class="subtotal_label" style="'.$titleStyleItalic.$titleStyleBold.$titleStyleUnderline.'">'.$langs->trans('Margin').' :</span>';
+							print '<span class="subtotal-margin nowraponall">';
+							print $langs->trans('Margin').' :';
 							print '&nbsp;'.price($subtotalMarginInfos['margin']);
+							if ($subtotalMarginInfos['margin_rate'] !== '') {
+								print ' ('.price($subtotalMarginInfos['margin_rate'], 0, '', 0, 0, 2).'%)';
+							}
 							print '</span>';
 						 }
-						 if (TSubtotal::isSubtotal($line)) print ' | ';
+						 if ($subtotalSummaryInOneCell) {
+							print ' | <span class="nowraponall" rel="subtotal_total">'.$langs->trans('AmountHT').' : '.price($total_line).'</span>';
+						 }
 						 if($line->info_bits > 0) echo img_picto($langs->trans('Pagebreak'), 'pagebreak@subtotal');
 					}
+					print '</td>';
 			?>
 
 			<?php
 				if($line->qty>90) {
 
 					/* Total */
-					echo '<td class="linecolht nowrap" align="right" style="font-weight:bold;" rel="subtotal_total">'.$langs->trans('AmountHT').' : '.price($total_line).'</td>';
+					if (!$subtotalSummaryInOneCell) {
+						echo '<td class="linecolht nowrap" align="right" style="font-weight:bold;" rel="subtotal_total">'.$langs->trans('AmountHT').' : '.price($total_line).'</td>';
+					}
 					if (isModEnabled('multicurrency') && ($object->multicurrency_code != $conf->currency)) {
 						echo '<td class="linecoltotalht_currency">&nbsp;</td>';
 					}

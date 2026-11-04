@@ -8,7 +8,7 @@ Situation invoice rows follow the effective native table column count. A subtota
 
 On proposals, orders and regular invoices, subtotal margins use Dolibarr's native calculation on the relevant block lines. Document buying prices, including zero, take precedence over current catalogue costs. Nested blocks use the same line range as the subtotal amount excluding tax.
 
-Card rows explicitly label **Subtotal: title | Cost price: value | Margin: value | Amount (excl. tax): value** in this order. The title matches the subtotal level. Costs and margins follow the existing display setting; the amount stays in its native column.
+Card summaries share a single cell: **Subtotal: title | Cost price: value | Margin: value (rate %) | Amount (excl. tax): value**. The title matches the subtotal level. Costs and margins follow the existing display setting. The margin rate uses buying cost as its denominator and is omitted when that cost is zero or negative. Title underlining does not apply to the margin.
 
 ## Compatibility
 

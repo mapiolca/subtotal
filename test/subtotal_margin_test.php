@@ -53,6 +53,7 @@ class MarginTestDocument
 	public $id = 1;
 	public $statut = 1;
 	public $status = 1;
+	public $multicurrency_code = 'EUR';
 }
 
 require_once __DIR__.'/../class/subtotal.class.php';
@@ -154,6 +155,18 @@ foreach (array('propal', 'commande', 'facture') as $element) {
 		if (serialize($document) !== $before) {
 			$failures[] = $element.' / '.$label.': rendering changed document data';
 		}
+	}
+}
+
+// Known margin rates use buying cost as the denominator, not selling revenue.
+foreach (array(array(150, 100, 50), array(100, 100, 0), array(50, 100, -50), array(100, 0, '')) as $rateCase) {
+	$document = new MarginTestDocument();
+	$document->element = 'propal';
+	$document->lines = array(marginTestLine(1, 1, 0, 0, true), marginTestLine(2, 1, $rateCase[0], $rateCase[1]), marginTestLine(3, 99, 0, 0, true));
+	$infos = $method->invoke($actions, $document, $document->lines[2]);
+	if (($rateCase[2] === '' && $infos['margin_rate'] !== '')
+		|| ($rateCase[2] !== '' && ($infos['margin_rate'] === '' || abs($infos['margin_rate'] - $rateCase[2]) > 0.000001))) {
+		$failures[] = 'Unexpected native margin rate for selling/buying prices '.json_encode($rateCase);
 	}
 }
 
