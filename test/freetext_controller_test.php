@@ -9,7 +9,7 @@
 if (PHP_SAPI !== 'cli') exit(1);
 $case = isset($argv[2]) ? $argv[2] : '';
 if ($case === '') {
-	$cases = array('create', 'without-right', 'admin-without-right', 'admin-with-right', 'external', 'without-document-right',
+	$cases = array('create', 'without-right', 'admin-without-right', 'admin-with-right', 'external', 'external-active', 'external-insert', 'without-document-right',
 		'outside-business-scope', 'validated', 'other-entity-document', 'shared-document', 'entity-two', 'existing-without-right',
 		'without-token', 'csrf-cleared-post', 'csrf-cleared-get', 'get-mutation', 'conflict', 'server-error', 'deleted', 'replay', 'module-off',
 		'insert-propal', 'insert-commande', 'insert-facture', 'insert-facturerec', 'insert-supplier_proposal', 'insert-order_supplier', 'insert-invoice_supplier', 'insert-empty');
@@ -53,6 +53,10 @@ switch ($case) {
 	case 'admin-without-right': $user->admin = 1; $user->manage = false; $expectedStatus = 403; break;
 	case 'admin-with-right': $user->admin = 1; break;
 	case 'external': $user->socid = 1; $expectedStatus = 403; break;
+	case 'external-active':
+		$user->socid = 1; $expectedStatus = 403; $_POST = array(); $_SERVER['REQUEST_METHOD'] = 'GET';
+		$_GET = array('element' => 'propal', 'elementid' => 1, 'view' => 'active'); break;
+	case 'external-insert': $user->socid = 1; $_POST['action'] = 'insert'; $expectedStatus = 403; break;
 	case 'without-document-right': $user->document = false; $expectedStatus = 403; break;
 	case 'outside-business-scope': $scope = false; $expectedStatus = 403; break;
 	case 'validated': $fixtureParent->status = 1; $expectedStatus = 403; break;

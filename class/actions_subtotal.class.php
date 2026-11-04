@@ -249,6 +249,7 @@ class ActionsSubtotal
 						$qty = $level<1 ? 1 : $level ;
 					}
 					else if($action=='add_free_text') {
+						if (!empty($user->socid)) accessforbidden();
 						if (GETPOST('token', 'alphanohtml') === '' || !hash_equals(currentToken(), GETPOST('token', 'alphanohtml'))) {
 							setEventMessages($langs->trans('ErrorBadToken'), null, 'errors');
 							return 0;
@@ -322,6 +323,7 @@ class ActionsSubtotal
 	function printNewFormat(&$object, &$conf, &$langs, $idvar)
 	{
 		global $user;
+		if (!empty($user->socid)) return false;
 		if (!getDolGlobalString('SUBTOTAL_ALLOW_ADD_BLOCK')) return false;
 		require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
 		require_once __DIR__.'/subtotalcompatibility.class.php';

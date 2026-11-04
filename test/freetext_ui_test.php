@@ -86,6 +86,12 @@ $conf->global->SUBTOTAL_ALLOW_ADD_BLOCK = 1;
 $conf->global->SUBTOTAL_ALLOW_ADD_LINE_UNDER_TITLE = 1;
 require_once __DIR__.'/../class/actions_subtotal.class.php';
 $hooks = new ActionsSubtotal($db);
+$user->socid = 1;
+ob_start();
+$externalResult = $hooks->printNewFormat($object, $conf, $langs, 'id');
+$externalOutput = ob_get_clean();
+if ($externalResult !== false || $externalOutput !== '') throw new RuntimeException('External users must not receive the insertion dialog');
+$user->socid = 0;
 $hooks->printNewFormat($object, $conf, $langs, 'id');
 ?>
 <script>var fixtures=<?php echo json_encode($fixtures, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;</script>

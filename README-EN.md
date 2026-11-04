@@ -18,6 +18,8 @@ Closing the manager refreshes choices while keeping the selected block and custo
 
 HTML sanitization retains text formatting, lists and tables; CSS styles, links and embedded resources are removed when copying or saving.
 
+This workflow is restricted to internal users. External users cannot access, manage or insert predefined texts, including through direct requests.
+
 After updating the files, open native user/group permissions to register missing rights for the active module. Grant **Manage predefined texts** (`10477701`) to the appropriate users or groups; it is not granted by default. Management also requires an internal user and read/write access to the draft document. Existing templates remain usable with document permissions alone. Native module reactivation is also supported and preserves module settings.
 
 The existing administrative dictionary and table are retained. Dictionary data belongs exclusively to the current entity, including when the document is shared from another entity. Conflicting changes are rejected while keeping the submitted input.

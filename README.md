@@ -31,6 +31,8 @@ Après fermeture, les choix sont actualisés sans effacer la description personn
 
 Le nettoyage HTML conserve la mise en forme textuelle, les listes et les tableaux ; les styles CSS, liens et ressources embarquées sont retirés lors de la copie ou de l’enregistrement.
 
+Ce parcours est réservé aux utilisateurs internes. Les utilisateurs externes n’accèdent ni aux modèles prédéfinis, ni à leur gestion, ni à leur insertion, y compris par appel direct.
+
 Après mise à jour des fichiers, actualisez les définitions natives des droits en ouvrant les permissions d’un utilisateur ou d’un groupe (Dolibarr enregistre les droits manquants du module actif). Attribuez **Gérer les textes prédéfinis** (`10477701`) aux utilisateurs ou groupes concernés ; ce droit n’est pas attribué par défaut. Le « + » exige aussi un utilisateur interne et les droits de lecture/modification du document brouillon. L’utilisation des modèles existants ne nécessite pas ce droit. Une réactivation native du module reste possible et conserve ses réglages.
 
 Le dictionnaire administratif existant et sa table sont conservés. Les textes restent propres à l’entité courante, même si le document est partagé depuis une autre entité. Les enregistrements concurrents sont refusés ; la saisie est conservée pour permettre sa reprise.

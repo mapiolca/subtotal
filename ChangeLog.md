@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 
 - Gestion des textes prédéfinis depuis la modale d’ajout de texte libre des documents clients et fournisseurs, sans quitter la fiche : recherche, pagination, création, modification, activation et suppression confirmée.
 - Nouveau droit « Gérer les textes prédéfinis » (`10477701`), non attribué par défaut, réservé aux utilisateurs internes autorisés à modifier le document. Actualiser les droits natifs après mise à jour, puis attribuer ce droit aux utilisateurs ou groupes concernés.
+- Parcours des textes prédéfinis réservé aux utilisateurs internes ; refus des lectures et insertions par les utilisateurs externes, y compris par appel direct.
 - Sélecteurs Select2 natifs ; actualisation du dictionnaire au retour sans perte du bloc ni de la description personnalisée. Un choix explicite charge le modèle dans l’éditeur HTML natif ou sa zone de texte de repli ; seule la version finale est copiée au document.
 - Conservation de la table et du dictionnaire administratif existants, isolation stricte par entité courante, protection CSRF, confirmations d’abandon et détection des modifications concurrentes. Aucune migration structurelle ni modification du core.
 
