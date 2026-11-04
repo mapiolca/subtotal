@@ -47,6 +47,7 @@ $foreign->mutate('create', $user, array('label' => 'Entity two', 'content' => '<
 $expectedStatus = 200;
 $expectedResult = 1;
 $scope = true;
+$langs->map['SubtotalFreeTextConflict'] = 'Texte modifi&eacute; : rechargez avant de r&eacute;essayer.';
 switch ($case) {
 	case 'without-right': $user->manage = false; $expectedStatus = 403; break;
 	case 'admin-without-right': $user->admin = 1; $user->manage = false; $expectedStatus = 403; break;
@@ -105,6 +106,7 @@ register_shutdown_function(function () use ($case, $expectedStatus, $expectedRes
 		fwrite(STDERR, $case.': status '.$status.' response '.$output."\n"); exit(1);
 	}
 	if (($expectedResult === 0 || $case === 'replay') && $db->rows !== $initialRows) { fwrite(STDERR, "Refused/replayed operation mutated data\n"); exit(1); }
+	if ($case === 'conflict' && $data['msg'] !== 'Texte modifié : rechargez avant de réessayer.') { fwrite(STDERR, "JSON conflict message must contain decoded UTF-8 text\n"); exit(1); }
 	if ($case === 'existing-without-right' && (count($data['data']['rows']) !== 1 || $data['data']['rows'][0]['label'] !== 'Entity one')) exit(1);
 	if (in_array($case, array('create', 'admin-with-right', 'shared-document', 'entity-two'), true)) {
 		if ($db->rows[3]['entity'] !== $conf->entity || $db->rows[3]['content'] !== '<p>Final <strong>HTML</strong></p>') exit(1);

@@ -23,7 +23,7 @@ class FreeTextTestTranslations
 	public $defaultlang = 'en_US';
 	public $map = array();
 	public function trans($key, ...$args) { return (isset($this->map[$key]) ? $this->map[$key] : $key).($args ? ':'.implode(',', $args) : ''); }
-	public function transnoentities($key, ...$args) { return $this->trans($key, ...$args); }
+	public function transnoentities($key, ...$args) { return html_entity_decode($this->trans($key, ...$args), ENT_QUOTES, 'UTF-8'); }
 	public function transnoentitiesnoconv($key) { return $key === 'SeparatorDecimal' ? '.' : ($key === 'SeparatorThousand' ? ',' : $key); }
 	public function load($key) { return 1; }
 	public function loadLangs($keys) { return 1; }

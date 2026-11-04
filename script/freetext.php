@@ -111,7 +111,7 @@ if ($action !== '') {
 		if ($result <= 0) {
 			$fieldError = $entry->getFieldError('label');
 			http_response_code($fieldError !== '' ? 422 : 500);
-			$response->msg = is_string($fieldError) && $fieldError !== '' ? $fieldError : $langs->trans('SubtotalFreeTextSaveFailed');
+			$response->msg = is_string($fieldError) && $fieldError !== '' ? html_entity_decode($fieldError, ENT_QUOTES, 'UTF-8') : $langs->transnoentities('SubtotalFreeTextSaveFailed');
 			$response->data = array('fieldErrors' => $fieldError !== '' ? array('label' => $fieldError) : array());
 			print $response->getJsonResponse();
 			exit;
@@ -146,7 +146,7 @@ function subtotalFreeTextError($key, $status)
 {
 	global $response, $langs;
 	http_response_code($status);
-	$response->msg = $langs->trans($key);
+	$response->msg = $langs->transnoentities($key);
 	print $response->getJsonResponse();
 	exit;
 }

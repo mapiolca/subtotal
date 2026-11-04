@@ -113,6 +113,8 @@
         var state = {busy: false, disposed: false, baseline: null, allowClose: false, sequences: {form: 0, list: 0}, query: {view: 'manager'}};
         function resize() {
             if (state.disposed) return;
+            // Native themes cap dialogs at 70%; this dictionary needs the requested wide viewport.
+            manager.dialog('widget').css('max-width', '95vw');
             manager.dialog('option', {width: Math.floor(window.innerWidth * 0.95), maxHeight: Math.floor(window.innerHeight * 0.9), height: 'auto',
                 position: {my: 'center', at: 'center', of: window, collision: 'fit'}});
         }
