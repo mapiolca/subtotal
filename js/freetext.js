@@ -115,7 +115,7 @@
             if (state.disposed) return;
             // Native themes cap dialogs at 70%; this dictionary needs the requested wide viewport.
             manager.dialog('widget').css('max-width', '95vw');
-            manager.dialog('option', {width: Math.floor(window.innerWidth * 0.95), maxHeight: Math.floor(window.innerHeight * 0.9), height: 'auto',
+            manager.dialog('option', {width: Math.floor(document.documentElement.clientWidth * 0.95), maxHeight: Math.floor(window.innerHeight * 0.9), height: 'auto',
                 position: {my: 'center', at: 'center', of: window, collision: 'fit'}});
         }
         function snapshot() {
@@ -218,7 +218,7 @@
         });
         var buttons = {};
         buttons[config.labels.CloseWindow] = function () { manager.dialog('close'); };
-        manager.dialog({modal: true, width: Math.floor(window.innerWidth * 0.95), maxHeight: Math.floor(window.innerHeight * 0.9),
+        manager.dialog({modal: true, width: Math.floor(document.documentElement.clientWidth * 0.95), maxHeight: Math.floor(window.innerHeight * 0.9),
             title: config.labels.SubtotalFreeTextManage, buttons: buttons,
             beforeClose: function () {
                 if (state.busy) return false;
