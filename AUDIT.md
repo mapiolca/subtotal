@@ -1,5 +1,12 @@
 # Subtotal compliance audit
 
+## 4.1.0 release checks — 2026-11-05
+
+- Finalized the release date in `ChangeLog.md`; descriptor, trigger and both README versions are already 4.1.0. About reads its metadata directly from the descriptor. The three shipped maintenance command entry points now start with the shebang required by the official packaging rules; their dry-run and permission behavior is unchanged.
+- All 14 top-level regression/fixture scripts passed on PHP 8.4.22 with the existing local Dolibarr 25.0.0-alpha sources. This includes 31 controller branches, 21 native-model scenarios, normal/custom/missing bootstrap resolution, native hook/descriptor/PDF checks and UI fragment generation. SQL, session and transaction simulations remain distinct from the real acceptance documented below. Static compliance, all 48 tracked PHP files, JavaScript syntax and diff checks passed.
+- Native cPanel deployment and real-dialog verification of the final inline-plus functional commit `dea4afc1909321a4cd25c73890ac994c55341833` were completed on 2026-11-04. The small inline icon, translated tooltip/accessibility name, manager opening and return passed; the initial disabled module state and identical settings were restored without saving business content. No further instance deployment is implied by the release.
+- The repository has no configured CI checks. PHPStan level 5 remains unavailable for this configured target: the available PHAR rejects `phpVersion: 70000` before analysis. Historical runtimes, the full instance-version matrix and the outstanding acceptance cases below are not newly validated by this release. The official packaging rules (wiki revision 65313) were consulted again on 2026-11-05; the ZIP is checked separately for its numeric name, single module root and shipped files. Native installer and Dolistore acceptance are not claimed.
+
 ## Predefined text management — 2026-11-04 (4.1.0)
 
 ### Dictionary layout refinement — 2026-11-04

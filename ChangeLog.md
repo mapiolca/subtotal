@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-# 4.1.0 — proposition de version
+# 4.1.0 — 2026-11-05
 
 - Gestion des textes prédéfinis depuis la modale d’ajout de texte libre des documents clients et fournisseurs, sans quitter la fiche : recherche, pagination, création, modification, activation et suppression confirmée.
 - Nouveau droit « Gérer les textes prédéfinis » (`10477701`), non attribué par défaut, réservé aux utilisateurs internes autorisés à modifier le document. Actualiser les droits natifs après mise à jour, puis attribuer ce droit aux utilisateurs ou groupes concernés.
