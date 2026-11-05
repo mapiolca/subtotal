@@ -83,7 +83,7 @@ $fixtures = array('form' => $blankForm, 'richForm' => $richForm, 'list' => $list
 <link rel="stylesheet" href="/_core/includes/jquery/plugins/select2/dist/css/select2.min.css">
 <link rel="stylesheet" href="/_core/theme/common/fontawesome-5/css/all.min.css">
 <style>body{font:14px Arial;margin:20px}.hideobject{display:none}.centpercent{width:100%}td,th{padding:7px;text-align:left}.oddeven{background:#fafafa}.liste_titre{background:#eee}.right{text-align:right}.div-table-responsive-no-min{overflow:auto}.error{background:#fee;padding:10px}.button{margin:5px}.ui-dialog-content{overflow:auto}.pagination{display:inline-block;padding:4px}.parentonrightofpage{display:inline-block;max-width:100%}textarea{max-width:100%}</style>
-<h1>Recette isolée — Subtotal 4.1.0</h1><p>Composants natifs ; données et réponses Ajax simulées. Aucun accès à une instance ERP.</p>
+<h1>Recette isolée — Subtotal 4.1.1</h1><p>Composants natifs ; données et réponses Ajax simulées. Aucun accès à une instance ERP.</p>
 <button id="open">Ouvrir l’insertion</button> <button id="run">Exécuter les scénarios</button> <label><input type="checkbox" id="rich"> Éditeur natif</label>
 <pre id="results"></pre><div id="inserted"></div>
 <script src="/_core/includes/jquery/js/jquery.min.js"></script><script src="/_core/includes/jquery/js/jquery-ui.min.js"></script>

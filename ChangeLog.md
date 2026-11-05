@@ -1,6 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+# 4.1.1 — 2026-11-05
+
+- Correction des titres PDF avec fond coloré lors d’un saut de page automatique : le fond suit les pages du titre sans provoquer une page supplémentaire ni isoler le titre des prestations suivantes.
+- Conservation des sauts de page forcés et de la position après les descriptions longues, sans modification des modèles de documents ni des réglages existants. Aucune migration nécessaire.
+
 # 4.1.0 — 2026-11-05
 
 - Gestion des textes prédéfinis depuis la modale d’ajout de texte libre des documents clients et fournisseurs, sans quitter la fiche : recherche, pagination, création, modification, activation et suppression confirmée.
