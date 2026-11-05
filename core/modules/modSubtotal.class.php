@@ -68,7 +68,7 @@ class modSubtotal extends DolibarrModules
 		$this->description = 'Module104777Desc';
 		$this->descriptionlong = 'Module104777DescLong';
 		// Possible values for version are: 'development', 'experimental' or version
-		$this->version = '4.0.2';
+		$this->version = '4.1.0';
 
 		// Key used in llx_const table to save module status enabled/disabled
 		// (where MYMODULE is value of property name of module in uppercase)
@@ -239,6 +239,12 @@ class modSubtotal extends DolibarrModules
 		// Permissions
 		$this->rights = array(); // Permission array used by this module
 		$r = 0;
+		$r++;
+		$this->rights[$r][0] = $this->numero * 100 + $r;
+		$this->rights[$r][1] = 'SubtotalFreeTextManagePermission';
+		$this->rights[$r][3] = 0;
+		$this->rights[$r][4] = 'freetext';
+		$this->rights[$r][5] = 'manage';
 
 		// Add here list of permission defined by
 		// an id, a label, a boolean and two constant strings.

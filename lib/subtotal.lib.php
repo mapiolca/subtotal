@@ -63,7 +63,7 @@ function getHtmlSelectTitle(&$object, $showLabel=false)
 	$html = '';
 	$htmlid = $showLabel ? 'subtotal_under_title_dialog' : 'subtotal_under_title';
 	if ($showLabel) $html.= '<label for="'.$htmlid.'">'.$langs->trans('subtotalLabelForUnderTitle').'</label>';
-	$html.= '<select id="'.$htmlid.'" name="under_title" class="under_title minwidth100 maxwidth200" style="width:200px"><option value="-1"></option>';
+	$html.= '<span class="parentonrightofpage"><select id="'.$htmlid.'" name="under_title" class="under_title minwidth100 maxwidth200" style="width:200px"><option value="-1"></option>';
 
 	$nbsp = '&nbsp;';
 	foreach ($TTitle as &$line)
@@ -75,7 +75,7 @@ function getHtmlSelectTitle(&$object, $showLabel=false)
 	}
 
 	$html .= '</select>';
-	$html .= ajax_combobox($htmlid, array(), 0, 0, '200px');
+	$html .= ajax_combobox($htmlid, array(), 0, 0, '200px', '-1', 'onrightofpage').'</span>';
 	return $html;
 }
 
@@ -102,36 +102,23 @@ function getTFreeText()
 function getHtmlSelectFreeText($withEmpty=true)
 {
 	global $langs;
+	require_once DOL_DOCUMENT_ROOT.'/core/lib/ajax.lib.php';
+	require_once __DIR__.'/../class/subtotalfreetext.class.php';
 
 	$TFreeText = getTFreeText();
-	$html = '<label for="free_text">'.$langs->trans('subtotalLabelForFreeText').'</label>';
-	$html.= '<select onChange="getTFreeText($(this));" name="free_text" class="minwidth200">';
+	$html = '<label for="subtotal_free_text_dialog">'.$langs->trans('subtotalLabelForFreeText').'</label> ';
+	$html.= '<span class="parentonrightofpage"><select id="subtotal_free_text_dialog" name="free_text" class="minwidth200 maxwidth300" style="width:300px">';
 	if ($withEmpty) $html.= '<option value=""></option>';
 
-	$TFreeTextContents = array();
 	foreach ($TFreeText as $id => $tab)
 	{
-		$html.= '<option value="'.$id.'">'.$tab->label.'</option>';
-		$TFreeTextContents[$id] = $tab->content;
+		$content = SubtotalFreeText::sanitizeContent((string) $tab->content);
+		$html.= '<option value="'.((int) $id).'" data-content="'.dol_escape_htmltag($content, 1, 1).'">'.dol_escape_htmltag($tab->label).'</option>';
 	}
 
 	$html .= '</select>';
 
-	$html .= '<script type="text/javascript">';
-	$html .= 'function getTFreeText(select) {';
-	$html .= ' var TFreeText = '.json_encode($TFreeTextContents).';';
-	$html .= ' var id = select.val();';
-	$html .= ' if (id in TFreeText) {';
-	$html .= '  var content = TFreeText[id];';
-	$html .= '  if (typeof CKEDITOR == "object" && typeof CKEDITOR.instances != "undefined" && "sub-total-title" in CKEDITOR.instances) {';
-	$html .= '   var editor = CKEDITOR.instances["sub-total-title"];';
-	$html .= '   editor.setData(content);';
-	$html .= '  } else {';
-	$html .= '   $("#sub-total-title").val(content);';
-	$html .= '  }';
-	$html .= ' }';
-	$html .= '}';
-	$html .= '</script>';
+	$html .= ajax_combobox('subtotal_free_text_dialog', array(), 0, 0, '300px', '', 'onrightofpage').'</span>';
 
 	return $html;
 }

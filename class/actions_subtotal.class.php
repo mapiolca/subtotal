@@ -220,7 +220,18 @@ class ActionsSubtotal
 
 		if(in_array('ordercard',$contexts) || in_array('ordersuppliercard',$contexts) || in_array('propalcard',$contexts) || in_array('supplier_proposalcard',$contexts) || in_array('invoicecard',$contexts) || in_array('invoicesuppliercard',$contexts) || in_array('invoicereccard',$contexts) || in_array('expeditioncard',$contexts)) {
 
-			$createRight = SubtotalAccess::canWrite($user, $object);
+			$createRight = false;
+			switch ($object->element) {
+				case 'propal': $createRight = $user->hasRight('propal', 'lire') && $user->hasRight('propal', 'creer'); break;
+				case 'commande': $createRight = $user->hasRight('commande', 'lire') && $user->hasRight('commande', 'creer'); break;
+				case 'facture':
+				case 'facturerec': $createRight = $user->hasRight('facture', 'lire') && $user->hasRight('facture', 'creer'); break;
+				case 'supplier_proposal': $createRight = $user->hasRight('supplier_proposal', 'lire') && $user->hasRight('supplier_proposal', 'creer'); break;
+				case 'order_supplier': $createRight = $user->hasRight('fournisseur', 'commande', 'lire') && $user->hasRight('fournisseur', 'commande', 'creer'); break;
+				case 'invoice_supplier': $createRight = $user->hasRight('fournisseur', 'facture', 'lire') && $user->hasRight('fournisseur', 'facture', 'creer'); break;
+				case 'shipping': $createRight = $user->hasRight('expedition', 'lire') && $user->hasRight('expedition', 'creer'); break;
+			}
+			$createRight = $createRight && SubtotalAccess::isObjectEntityAllowed($object);
 
 			if (SubtotalAccess::isEditable($object) && $createRight) {
 
@@ -238,16 +249,16 @@ class ActionsSubtotal
 						$qty = $level<1 ? 1 : $level ;
 					}
 					else if($action=='add_free_text') {
-						$title = GETPOST('title', 'restricthtml');
-
-						if (empty($title)) {
-							$free_text = GETPOST('free_text', 'int');
-							if (!empty($free_text)) {
-								$TFreeText = getTFreeText();
-								if (!empty($TFreeText[$free_text])) {
-									$title = $TFreeText[$free_text]->content;
-								}
-							}
+						if (!empty($user->socid)) accessforbidden();
+						if (GETPOST('token', 'alphanohtml') === '' || !hash_equals(currentToken(), GETPOST('token', 'alphanohtml'))) {
+							setEventMessages($langs->trans('ErrorBadToken'), null, 'errors');
+							return 0;
+						}
+						require_once __DIR__.'/subtotalfreetext.class.php';
+						$title = SubtotalFreeText::sanitizeContent(GETPOST('title', 'restricthtml'));
+						if (trim($title) === '') {
+							setEventMessages($langs->trans('SubtotalFreeTextContentRequired'), null, 'errors');
+							return 0;
 						}
 						if(empty($title)) $title = $langs->trans('subtotalAddLineDescription');
 						$qty = 50;
@@ -311,7 +322,33 @@ class ActionsSubtotal
 
 	function printNewFormat(&$object, &$conf, &$langs, $idvar)
 	{
+		global $user;
+		if (!empty($user->socid)) return false;
 		if (!getDolGlobalString('SUBTOTAL_ALLOW_ADD_BLOCK')) return false;
+		require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
+		require_once __DIR__.'/subtotalcompatibility.class.php';
+		$freeTextEditor = new DolEditor('sub-total-title', '', '', 300, 'dolibarr_details', '', false, -1,
+			SubtotalCompatibility::isFeatureAvailable('freetext_html_editor'), 8, '100%');
+		$freeTextEditorHtml = $freeTextEditor->Create(1);
+		$canWriteDocument = false;
+		switch ($object->element) {
+			case 'propal': $canWriteDocument = $user->hasRight('propal', 'lire') && $user->hasRight('propal', 'creer'); break;
+			case 'commande': $canWriteDocument = $user->hasRight('commande', 'lire') && $user->hasRight('commande', 'creer'); break;
+			case 'facture':
+			case 'facturerec': $canWriteDocument = $user->hasRight('facture', 'lire') && $user->hasRight('facture', 'creer'); break;
+			case 'supplier_proposal': $canWriteDocument = $user->hasRight('supplier_proposal', 'lire') && $user->hasRight('supplier_proposal', 'creer'); break;
+			case 'order_supplier': $canWriteDocument = $user->hasRight('fournisseur', 'commande', 'lire') && $user->hasRight('fournisseur', 'commande', 'creer'); break;
+			case 'invoice_supplier': $canWriteDocument = $user->hasRight('fournisseur', 'facture', 'lire') && $user->hasRight('fournisseur', 'facture', 'creer'); break;
+		}
+		$canManageFreeText = $canWriteDocument && SubtotalAccess::isEditable($object) && empty($user->socid) && $user->hasRight('subtotal', 'freetext', 'manage');
+		$freeTextLabels = array();
+		foreach (array('Yes', 'No', 'Confirm', 'CloseWindow', 'SubtotalFreeTextManage', 'SubtotalFreeTextDiscard', 'SubtotalFreeTextDeleteConfirm', 'SubtotalFreeTextLoadFailed') as $key) {
+			$freeTextLabels[$key] = $langs->transnoentities($key);
+		}
+		$freeTextConfig = array('url' => dol_buildpath('/subtotal/script/freetext.php', 1), 'element' => $object->element,
+			'elementid' => (int) $object->id, 'token' => currentToken(), 'canManage' => $canManageFreeText, 'labels' => $freeTextLabels);
+		$freeTextButton = $canManageFreeText ? '<a href="#" id="subtotal-manage-freetext" title="'.dol_escape_htmltag($langs->transnoentities('SubtotalFreeTextManage')).'" aria-label="'.dol_escape_htmltag($langs->transnoentities('SubtotalFreeTextManage')).'"><span class="fa fa-plus-circle valignmiddle paddingleft" aria-hidden="true"></span></a>' : '';
+		print '<script src="'.dol_buildpath('/subtotal/js/freetext.js', 1).'"></script>';
 
 		$jsData = array(
 			'conf' => array(
@@ -351,6 +388,7 @@ class ActionsSubtotal
 		 	<script type="text/javascript">
 				$(document).ready(function() {
 					let jsSubTotalData = <?php print json_encode($jsData); ?>;
+					let subtotalFreeTextConfig = <?php print json_encode($freeTextConfig, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
 					if (jsSubTotalData.conf.groupBtn == 0) {
 
@@ -378,13 +416,17 @@ class ActionsSubtotal
 					}
 
 					function updateAllMessageForms(){
-				         for (instance in CKEDITOR.instances) {
-				             CKEDITOR.instances[instance].updateElement();
-				         }
+					         if (window.CKEDITOR && CKEDITOR.instances['sub-total-title']) CKEDITOR.instances['sub-total-title'].updateElement();
 				    }
 
 					function promptSubTotal(action, titleDialog, label, url_to, url_ajax, params, use_textarea, show_free_text, show_under_title) {
-					     $( "#dialog-prompt-subtotal" ).remove();
+					     var previousDialog = $('#dialog-prompt-subtotal');
+					     if (previousDialog.hasClass('ui-dialog-content')) {
+					         previousDialog.dialog('close');
+					         if (previousDialog.dialog('isOpen')) return;
+					         previousDialog.dialog('destroy');
+					     }
+					     previousDialog.remove();
 
 						 var dialog_html = '<div id="dialog-prompt-subtotal" '+(action == 'addSubtotal' ? 'class="center"' : '')+' >';
 						 dialog_html += '<input id="token" name="token" type="hidden" value="' + jsSubTotalData.conf.token + '" />';
@@ -401,10 +443,10 @@ class ActionsSubtotal
 							if (typeof show_free_text != 'undefined' && show_free_text)
 							{
 							   var selectFreeText = <?php echo json_encode(getHtmlSelectFreeText()); ?>;
-							   dialog_html += selectFreeText + ' <?php echo $langs->transnoentities('subtotalFreeTextOrDesc'); ?><br />';
+							   dialog_html += selectFreeText + <?php echo json_encode(' '.$freeTextButton.' '.$langs->trans('subtotalFreeTextOrDesc').'<br />', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 							}
 
-							if (typeof use_textarea != 'undefined' && use_textarea) dialog_html += '<textarea id="sub-total-title" rows="<?php echo ROWS_8; ?>" cols="80" placeholder="'+label+'"></textarea>';
+							if (typeof use_textarea != 'undefined' && use_textarea) dialog_html += <?php echo json_encode($freeTextEditorHtml, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 							else dialog_html += '<input id="sub-total-title" size="30" value="" placeholder="'+label+'" />';
 						}
 
@@ -435,40 +477,11 @@ class ActionsSubtotal
 
 						$('body').append(dialog_html);
 
-						<?php
-						$editorTool = getDolGlobalString('FCKEDITOR_EDITORNAME', 'ckeditor');
-						$editorConf = empty(getDolGlobalString('FCKEDITOR_ENABLE_DETAILS')) ? false : getDolGlobalString('FCKEDITOR_ENABLE_DETAILS');
-						if($editorConf && in_array($editorTool,array('textarea','ckeditor'))){
-						?>
-						if (action == 'addTitle' || action == 'addFreeTxt')
-						{
-							if (typeof use_textarea != 'undefined' && use_textarea && typeof CKEDITOR == "object" && typeof CKEDITOR.instances != "undefined" )
-							{
-								CKEDITOR.replace('sub-total-title', {
-									toolbar: 'dolibarr_details',
-									versionCheck: false,
-									toolbarStartupExpanded: false,
-
-									// Intégration du filemanager via les variables JS de Dolibarr
-									filebrowserBrowseUrl: ckeditorFilebrowserBrowseUrl,
-									filebrowserImageBrowseUrl: ckeditorFilebrowserImageBrowseUrl,
-									// filebrowserUploadUrl: DOL_URL_ROOT + '/includes/fckeditor/editor/filemanagerdol/connectors/php/upload.php?Type=File',
-									// filebrowserImageUploadUrl: DOL_URL_ROOT + '/includes/fckeditor/editor/filemanagerdol/connectors/php/upload.php?Type=Image',
-
-									// Dimensions des fenêtres popup
-									filebrowserWindowWidth: '900',
-									filebrowserWindowHeight: '500',
-									filebrowserImageWindowWidth: '900',
-									filebrowserImageWindowHeight: '500'
-								});
-							}
-						}
-						<?php } ?>
-
 					     $( "#dialog-prompt-subtotal" ).dialog({
 	                        resizable: false,
 							height: 'auto',
-							width: 'auto',
+							width: action === 'addFreeTxt' ? Math.min(1000, Math.floor(window.innerWidth * 0.95)) : 'auto',
+							maxHeight: Math.floor(window.innerHeight * 0.9),
 	                        modal: true,
 	                        title: titleDialog,
 	                        buttons: {
@@ -484,6 +497,14 @@ class ActionsSubtotal
 									params.free_text = $(this).find('select[name=free_text]').val();
 									params.level = $(this).find('select[name=subtotal_line_level]').val();
 									params.token = $(this).find('input[name=token]').val();
+									if (action === 'addFreeTxt') {
+										var insertionDialog = $(this);
+										window.SubtotalFreeText.insert(insertionDialog, subtotalFreeTextConfig, params).done(function (data) {
+											insertionDialog.dialog('close');
+											document.location.href = url_to + '&gotoline=' + (params.rank || 0) + '#row-' + data.id;
+										});
+										return;
+									}
 
 									let microtime = new Date();
 									url_to+="&microtime="+ microtime.getTime(); // to avoid # ancor blocking refresh by adding same rank as curent
@@ -502,7 +523,7 @@ class ActionsSubtotal
 											url_to = url_to + "&gotoline=" + params.rank + "#tableaddline";
 										}
 										document.location.href=url_to;
-									});
+						                     });
 
                                     $( this ).dialog( "close" );
 	                            },
@@ -511,6 +532,7 @@ class ActionsSubtotal
 	                            }
 	                        }
 	                     });
+					     window.SubtotalFreeText.attach($('#dialog-prompt-subtotal'), subtotalFreeTextConfig);
 					}
 
 					$('a[rel=add_title_line]').click(function(e)

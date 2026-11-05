@@ -1,6 +1,6 @@
-# Subtotal 4.0.2
+# Subtotal 4.1.0
 
-Version corrective du **2026-11-04**, consacrée au calcul et à l’affichage des marges de sous-totaux.
+Gestion des textes prédéfinis directement depuis les documents, avec un droit dédié.
 
 Subtotal ajoute des titres, sous-titres, textes libres et sous-totaux aux propositions commerciales, commandes, factures et documents fournisseurs pris en charge par Dolibarr.
 
@@ -22,6 +22,20 @@ Sur les devis, commandes et factures ordinaires, la marge du sous-total utilise 
 Sur les fiches, le récapitulatif est regroupé dans une seule cellule : **Sous-total : titre | Prix de revient : valeur | Marge : valeur (taux %) | Montant HT : valeur**. Le titre correspond au niveau du sous-total. Le prix de revient et la marge apparaissent lorsque leur affichage est activé. Le taux de marge est calculé sur le prix de revient ; il n’est pas affiché lorsque ce coût est nul ou négatif. Le soulignage du titre ne s’applique pas à la marge.
 
 Le sélecteur de titre permet d’insérer une ligne directement après un titre ou en fin de section selon le réglage choisi. En fin de section, une section sans sous-total se termine au titre suivant de niveau égal ou supérieur. Les libellés longs restent consultables dans un sélecteur de largeur bornée.
+
+## Textes prédéfinis depuis les documents
+
+Dans « Ajouter un texte libre », les deux sélecteurs utilisent le Select2 natif Dolibarr lorsqu’il est activé. Le « + » avant « ou saisir une description » ouvre une seconde modale de gestion : recherche, pagination, création, modification, activation et suppression confirmée. Le libellé est obligatoire (255 caractères maximum) ; le contenu reste facultatif. L’éditeur HTML natif est utilisé lorsqu’il est disponible et activé, avec une zone de texte sinon.
+
+Après fermeture, les choix sont actualisés sans effacer la description personnalisée ni changer le bloc choisi. Un modèle ajouté n’est pas sélectionné automatiquement. Seul un choix explicite charge son contenu dans l’éditeur ; « OK » copie le texte final dans le document. Les modifications ultérieures du dictionnaire ne changent pas les documents existants.
+
+Le nettoyage HTML conserve la mise en forme textuelle, les listes et les tableaux ; les styles CSS, liens et ressources embarquées sont retirés lors de la copie ou de l’enregistrement.
+
+Ce parcours est réservé aux utilisateurs internes. Les utilisateurs externes n’accèdent ni aux modèles prédéfinis, ni à leur gestion, ni à leur insertion, y compris par appel direct.
+
+Après mise à jour des fichiers, actualisez les définitions natives des droits en ouvrant les permissions d’un utilisateur ou d’un groupe (Dolibarr enregistre les droits manquants du module actif). Attribuez **Gérer les textes prédéfinis** (`10477701`) aux utilisateurs ou groupes concernés ; ce droit n’est pas attribué par défaut. Le « + » exige aussi un utilisateur interne et les droits de lecture/modification du document brouillon. L’utilisation des modèles existants ne nécessite pas ce droit. Une réactivation native du module reste possible et conserve ses réglages.
+
+Le dictionnaire administratif existant et sa table sont conservés. Les textes restent propres à l’entité courante, même si le document est partagé depuis une autre entité. Les enregistrements concurrents sont refusés ; la saisie est conservée pour permettre sa reprise.
 
 ## Compatibilité
 

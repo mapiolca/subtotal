@@ -228,3 +228,16 @@ SUBTOTAL_TEXT_LINE_STYLE=Free-text style (B = bold, U = underlined, I = italic)
 SubtotalTriggerDescription=Subtotal module business triggers
 UsefulLinks=Useful links
 Repository=Source repository
+SubtotalFreeTextManagePermission=Manage predefined texts
+SubtotalFreeTextManage=Manage predefined texts
+SubtotalFreeTextDiscard=Discard unsaved changes to this predefined text?
+SubtotalFreeTextDeleteConfirm=Delete this predefined text? Texts already inserted into documents will be kept.
+SubtotalFreeTextLoadFailed=Unable to load predefined texts. Please try again.
+SubtotalFreeTextConflict=Another user changed or deleted this text. Reload it before trying again; your input has been kept.
+SubtotalFreeTextSaveFailed=Unable to save the text. Your input has been kept; please try again.
+SubtotalFreeTextContentRequired=Enter a description before inserting it into the document.
+CompatibilityFeatureFreeText=Predefined texts from documents
+CompatibilityFeatureFreeTextDescription=Current entity dictionary, management with a dedicated permission and native HTML editor or textarea fallback.
+CompatibilityFeatureFreeTextEditor=Predefined text HTML editor
+CompatibilityFeatureFreeTextEditorDescription=Native WYSIWYG editor in both dialogs; a textarea remains available when it is disabled.
+CompatibilityReasonFreeTextEditor=Enable the WYSIWYG module, CKEditor and its use in details to use the HTML editor. The textarea remains available.
