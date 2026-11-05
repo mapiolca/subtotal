@@ -1,0 +1,3 @@
+scripts/maintenance/migrate_legacy_special_code.php text eol=lf
+scripts/maintenance/migrate_title_labels.php text eol=lf
+scripts/maintenance/recalculate_not_included.php text eol=lf
