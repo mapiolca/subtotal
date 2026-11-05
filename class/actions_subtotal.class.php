@@ -1482,9 +1482,13 @@ class ActionsSubtotal
 
 
 		$posYBeforeTile = $pdf->GetY();
+		$titleStartPage = $pdf->getPage();
+		$minimumTitleHeight = $pdf->getCellHeight($pdf->getFontSize());
 		if ($label === strip_tags($label) && $label === dol_html_entity_decode($label, ENT_QUOTES)) $pdf->MultiCell($w, $h, $label, 0, 'L', $fillDescBloc); // Pas de HTML dans la chaine
 		else $pdf->writeHTMLCell($w, $h, $posx, $posy, $label, 0, 1, $fillDescBloc, true, 'J',true); // et maintenant avec du HTML
 
+		$titleEndPage = $pdf->getPage();
+		$titleEndY = $pdf->GetY();
 
 		$posYBeforeDesc = $pdf->GetY();
 		if($description && !($hidedesc??0)) {
@@ -1497,7 +1501,7 @@ class ActionsSubtotal
 		if ($fillBackground)
 		{
 			$posYAfterDesc = $pdf->GetY();
-			$cell_height = $pdf->getStringHeight($w, $label) + $backgroundCellHeightOffset;
+			$pageAfterDesc = $pdf->getPage();
 			$bgStartX = $posx;
 			$bgW = $pdf->page_largeur - $pdf->marge_droite;// historiquement ce sont ces valeurs, mais elles sont la plupart du temps vide
 
@@ -1508,10 +1512,36 @@ class ActionsSubtotal
 			}
 
 			$pdf->SetFillColor($backgroundColor[0], $backgroundColor[1], $backgroundColor[2]);
-			$pdf->SetXY($bgStartX, $posy + $backgroundCellPosYOffset); //-2 to take into account  the entire height of the row
-			$pdf->MultiCell($bgW, $cell_height, '', 0, '', 1, 1,'','',true,0, true); //+2 same of SetXY()
-			$posy = $posYAfterDesc;
-			$pdf->SetXY($posx, $posy); //reset position
+			// A title moved before its first line must not paint the old page bottom.
+			$pageDimensions = $pdf->getPageDimensions($titleStartPage);
+			if ($titleStartPage < $titleEndPage
+				&& $posYBeforeTile + $minimumTitleHeight > $pageDimensions['hk'] - $pageDimensions['bm']) {
+				$titleStartPage++;
+				$pageDimensions = $pdf->getPageDimensions($titleStartPage);
+				$posYBeforeTile = $pageDimensions['tm'];
+			}
+			$autoPageBreak = $pdf->getAutoPageBreak();
+			$breakMargin = $pdf->getBreakMargin();
+			try {
+				$pdf->SetAutoPageBreak(false, $breakMargin);
+				for ($page = $titleStartPage; $page <= $titleEndPage; $page++) {
+					$pdf->setPage($page);
+					$pageDimensions = $pdf->getPageDimensions($page);
+					$backgroundTop = $page === $titleStartPage ? $posYBeforeTile : $pageDimensions['tm'];
+					$backgroundBottom = $page === $titleEndPage ? $titleEndY + $backgroundCellHeightOffset : $pageDimensions['hk'] - $pageDimensions['bm'];
+					$backgroundTop += $backgroundCellPosYOffset;
+					$backgroundBottom += $backgroundCellPosYOffset;
+					$backgroundBottom = min($backgroundBottom, $pageDimensions['hk'] - $pageDimensions['bm']);
+					if ($backgroundBottom > $backgroundTop) {
+						$pdf->SetXY($bgStartX, $backgroundTop);
+						$pdf->MultiCell($bgW, $backgroundBottom - $backgroundTop, '', 0, '', 1, 1, '', '', true, 0, true);
+					}
+				}
+			} finally {
+				$pdf->setPage($pageAfterDesc);
+				$pdf->SetAutoPageBreak($autoPageBreak, $breakMargin);
+				$pdf->SetXY($posx, $posYAfterDesc);
+			}
 			$pdf->SetFont('', $style, $size_title); //reset style
 			$pdf->SetColor('text', 0, 0, 0); // restore default text color;
 		}

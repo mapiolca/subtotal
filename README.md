@@ -1,4 +1,4 @@
-# Subtotal 4.1.0
+# Subtotal 4.1.1
 
 Gestion des textes prédéfinis directement depuis les documents, avec un droit dédié.
 
@@ -14,6 +14,8 @@ Subtotal ajoute des titres, sous-titres, textes libres et sous-totaux aux propos
 - prise en charge des factures de situation ;
 - dictionnaire de textes libres isolé par entité ;
 - API REST de lecture des sous-totaux.
+
+La version 4.1.1 corrige les pages supplémentaires provoquées par le fond coloré d’un titre lors d’un saut de page automatique. Les sauts forcés avant les titres et les modèles de documents existants sont conservés ; aucune migration ni modification de réglage n’est nécessaire.
 
 Pour les factures de situation, le rendu des titres, textes libres et sous-totaux suit le nombre réel de colonnes de la table Dolibarr. La marge d’un sous-total additionne la contribution de chaque ligne au prorata de son avancement dans la situation courante.
 
@@ -52,6 +54,8 @@ Placez le répertoire `subtotal` dans le répertoire des modules externes de Dol
 La désactivation conserve les constantes et choix administrateur. Elle ne purge ni les réglages ni les lignes historiques identifiées par le `special_code` `104777`.
 
 ## Maintenance
+
+Le test `php test/pdf_title_pagination_test.php /chemin/vers/tcpdf.php` vérifie les sauts automatiques et forcés avec le moteur TCPDF natif et des services Dolibarr simulés. Un second argument peut désigner un répertoire existant pour exporter les PDF de contrôle ; ce test ne remplace pas la régénération sur l’instance.
 
 Les anciennes migrations web ont été remplacées par des commandes CLI en lecture seule par défaut dans `scripts/maintenance/`. Utilisez `--execute` uniquement après sauvegarde et précisez toujours l’entité ciblée. Les migrations objet exigent également `--user-id=<administrateur>`.
 

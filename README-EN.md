@@ -1,4 +1,6 @@
-# Subtotal 4.1.0
+# Subtotal 4.1.1
+
+Version 4.1.1 fixes extra pages caused by title backgrounds during automatic page breaks. Explicit page breaks before titles and existing document models are preserved; no migration or configuration change is required.
 
 Manage predefined texts directly from documents with a dedicated permission.
 
@@ -25,6 +27,8 @@ After updating the files, open native user/group permissions to register missing
 The existing administrative dictionary and table are retained. Dictionary data belongs exclusively to the current entity, including when the document is shared from another entity. Conflicting changes are rejected while keeping the submitted input.
 
 ## Compatibility
+
+Run `php test/pdf_title_pagination_test.php /path/to/tcpdf.php` to check automatic and explicit page breaks with native TCPDF and simulated Dolibarr services. An optional second argument exports verification PDFs to an existing directory. This does not replace regenerating a proposal on the deployed instance.
 
 - Dolibarr 16 or later;
 - PHP 7.0 or later;
